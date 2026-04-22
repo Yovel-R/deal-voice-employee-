@@ -1,5 +1,5 @@
 import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
-import { NgIf, NgFor, NgClass } from '@angular/common';
+import { NgIf, NgFor, NgClass, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Chart, registerables } from 'chart.js';
@@ -64,7 +64,7 @@ interface CallStats {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [NgIf, NgFor, NgClass, FormsModule],
+  imports: [NgIf, NgFor, NgClass, FormsModule, DecimalPipe],
   templateUrl: './app.html',
   styleUrl: './app.css',
   encapsulation: ViewEncapsulation.None,
@@ -103,6 +103,28 @@ export class App implements OnInit, OnDestroy {
   leadSearch = '';
   leadStatusFilter = '';
   updatingLeadId = '';
+  selectedLeadCompany = ''; // For sidebar layout
+
+  get uniqueLeadCompanies(): string[] {
+    const sets = new Set<string>();
+    this.leads.forEach(l => {
+      if (l.leadCompanyName) sets.add(l.leadCompanyName);
+    });
+    const arr = Array.from(sets).sort();
+    if (arr.length > 0 && !this.selectedLeadCompany) {
+      this.selectedLeadCompany = arr[0];
+    }
+    return arr;
+  }
+
+  get leadsInSelectedCompany(): Lead[] {
+    if (!this.selectedLeadCompany) return [];
+    return this.leads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
+  }
+
+  selectLeadCompany(name: string): void {
+    this.selectedLeadCompany = name;
+  }
 
   readonly LEAD_STATUSES = ['New', 'Contacted', 'Interested', 'Not Interested', 'Converted', 'Follow Up'];
 

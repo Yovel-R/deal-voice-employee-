@@ -9,7 +9,7 @@
   <div class="login-card">
     <div class="login-brand">
       <div class="brand-logo" style="background: transparent;">
-        <img src="assets/icon/logo.png" alt="DealVoice Logo" style="width: 90px; height: auto; object-fit: contain;">
+        <img src="assets/icon/logo.png" alt="DealVoice Logo" style="width: 160px; height: auto; object-fit: contain;">
       </div>
     </div>
 
@@ -70,17 +70,30 @@
 <!-- ========== DASHBOARD ========== -->
 <div class="dashboard-wrapper" *ngIf="loggedIn">
   
-  <!-- ========== NAVBAR (Mobile Header) ========== -->
-  <nav class="navbar" style="border-bottom: 1px solid var(--border); box-shadow: none;">
+  <!-- Dashboard Navbar (Matches web-page style) -->
+  <nav class="navbar dashboard-nav">
     <div class="nav-container">
-      <div class="nav-brand">
+      <div class="nav-brand" (click)="dashTab='overview'" style="cursor:pointer;">
+        <button class="dash-hamburger" (click)="sidebarOpen = !sidebarOpen">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" />
+          </svg>
+        </button>
         <div class="brand-icon">
-          <img src="assets/icon/logo.png" alt="DealVoice Logo" style="width: 80px; height: auto; object-fit: contain;">
+          <img src="assets/icon/logo.png" alt="DealVoice Logo" style="height: 38px;">
         </div>
       </div>
-      <button class="hamburger" aria-label="Open menu" (click)="sidebarOpen = true">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="3" y1="12" x2="21" y2="12"></line><line x1="3" y1="6" x2="21" y2="6"></line><line x1="3" y1="18" x2="21" y2="18"></line></svg>
-      </button>
+
+      <div class="nav-auth">
+        <span class="user-badge" *ngIf="employee">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+          </svg>
+          {{ employee.name }} &middot; {{ employee.companyCode }}
+        </span>
+        <button class="btn-login" (click)="logout()">Sign Out</button>
+      </div>
     </div>
   </nav>
 
@@ -88,7 +101,7 @@
     <!-- Mobile Sidebar Overlay -->
     <div class="dash-sidebar-overlay" [class.active]="sidebarOpen" (click)="sidebarOpen = false"></div>
 
-    <!-- Sidebar -->
+    <!-- Sidebar (Matches web-page style) -->
     <aside class="dash-sidebar" [class.active]="sidebarOpen" [class.minimized]="sidebarMinimized">
       <div class="sidebar-nav-list">
         <div class="sidebar-top">
@@ -157,88 +170,129 @@
 
     <!-- ════════ OVERVIEW TAB ════════ -->
     <div class="tab-content" *ngIf="dashTab==='overview'">
-      <div class="dash-header-row" style="margin-bottom: 1.5rem;">
+      <div class="dash-header-row">
         <h2 class="dash-title">Overview</h2>
-      </div>
-
-      <!-- Period pills -->
-      <div class="period-bar">
-        <button id="periodToday" class="period-pill" [class.active]="selectedPeriod==='today'" (click)="onPeriodChange('today')">Today</button>
-        <button id="periodYesterday" class="period-pill" [class.active]="selectedPeriod==='yesterday'" (click)="onPeriodChange('yesterday')">Yesterday</button>
-        <button id="periodLastweek" class="period-pill" [class.active]="selectedPeriod==='lastweek'" (click)="onPeriodChange('lastweek')">Last 7 Days</button>
-      </div>
-
-      <!-- Stat cards -->
-      <div class="stats-grid" *ngIf="!statsLoading">
-        <div class="stat-card blue">
-          <div class="stat-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.29 18a19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91A16 16 0 0 0 14 15.82l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-            </svg>
-          </div>
-          <div class="stat-body">
-            <div class="stat-value">{{ callStats?.total ?? '—' }}</div>
-            <div class="stat-label">Total Calls</div>
-          </div>
-        </div>
-
-        <div class="stat-card green">
-          <div class="stat-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="20 6 9 17 4 12"/>
-            </svg>
-          </div>
-          <div class="stat-body">
-            <div class="stat-value">{{ callStats?.connected ?? '—' }}</div>
-            <div class="stat-label">Connected</div>
-          </div>
-        </div>
-
-        <div class="stat-card orange">
-          <div class="stat-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-          </div>
-          <div class="stat-body">
-            <div class="stat-value">{{ fmtDur(callStats?.totalDuration ?? 0) }}</div>
-            <div class="stat-label">Talk Time</div>
-          </div>
-        </div>
-
-        <div class="stat-card red">
-          <div class="stat-icon">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-            </svg>
-          </div>
-          <div class="stat-body">
-            <div class="stat-value">{{ callStats?.missed ?? '—' }}</div>
-            <div class="stat-label">Missed</div>
-          </div>
+        <div class="period-tabs">
+          <button id="periodToday" [class.active]="selectedPeriod==='today'" (click)="onPeriodChange('today')">Today</button>
+          <button id="periodYesterday" [class.active]="selectedPeriod==='yesterday'" (click)="onPeriodChange('yesterday')">Yesterday</button>
+          <button id="periodLastweek" [class.active]="selectedPeriod==='lastweek'" (click)="onPeriodChange('lastweek')">Last 7 Days</button>
         </div>
       </div>
 
-      <!-- Loading shimmer -->
-      <div class="stats-grid" *ngIf="statsLoading">
-        <div class="stat-card shimmer" *ngFor="let i of [1,2,3,4]"></div>
-      </div>
-
-      <!-- Chart + breakdown row -->
-      <div class="overview-row">
-        <!-- Donut chart -->
-        <div class="chart-card">
-          <div class="card-header">
-            <h3 class="card-title">Call Distribution</h3>
+      <div class="dash-grid-layout">
+        <!-- Stat cards (KPI Style) -->
+        <div class="top-stats-row" *ngIf="!statsLoading">
+          
+          <!-- Card 1: Total Calls -->
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <span class="kpi-val">{{ callStats?.total ?? '—' }}</span>
+              <span class="kpi-label">Total Calls</span>
+            </div>
+            <div class="kpi-progress">
+              <svg class="progress-ring" width="48" height="48">
+                <circle class="progress-ring__circle bg" stroke="var(--border)" stroke-width="4" fill="transparent" r="20" cx="24" cy="24" />
+                <circle class="progress-ring__circle val" stroke="#3b82f6" stroke-width="4" fill="transparent" r="20" cx="24" cy="24" style="stroke-dasharray: 125.6; stroke-dashoffset: 0;" />
+              </svg>
+              <div class="kpi-progress-text" style="color: #3b82f6;">All</div>
+            </div>
           </div>
-          <div class="chart-wrap">
-            <canvas id="empDonutChart"></canvas>
+
+          <!-- Card 2: Connected -->
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <span class="kpi-val">{{ callStats?.connected ?? '—' }}</span>
+              <span class="kpi-label">Connected</span>
+            </div>
+            <div class="kpi-progress">
+              <svg class="progress-ring" width="48" height="48">
+                <circle class="progress-ring__circle bg" stroke="var(--border)" stroke-width="4" fill="transparent" r="20" cx="24" cy="24" />
+                <circle class="progress-ring__circle val" stroke="#10b981" stroke-width="4" fill="transparent" r="20" cx="24" cy="24" 
+                  [style.stroke-dasharray]="125.6"
+                  [style.stroke-dashoffset]="callStats?.total ? 125.6 - (125.6 * (callStats!.connected / callStats!.total)) : 125.6" />
+              </svg>
+              <div class="kpi-progress-text" style="color: #10b981;">
+                {{ callStats?.total ? (callStats!.connected / callStats!.total * 100 | number:'1.0-0') : 0 }}%
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Talk Time -->
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <span class="kpi-val">{{ fmtDur(callStats?.totalDuration ?? 0) }}</span>
+              <span class="kpi-label">Talk Time</span>
+            </div>
+            <div class="kpi-progress">
+              <svg class="progress-ring" width="48" height="48">
+                <circle class="progress-ring__circle bg" stroke="var(--border)" stroke-width="4" fill="transparent" r="20" cx="24" cy="24" />
+                <circle class="progress-ring__circle val" stroke="#f59e0b" stroke-width="4" fill="transparent" r="20" cx="24" cy="24" style="stroke-dasharray: 125.6; stroke-dashoffset: 30;" />
+              </svg>
+              <div class="kpi-progress-text" style="color: #f59e0b;">Dur</div>
+            </div>
+          </div>
+
+          <!-- Card 4: Missed -->
+          <div class="kpi-card">
+            <div class="kpi-info">
+              <span class="kpi-val">{{ callStats?.missed ?? '—' }}</span>
+              <span class="kpi-label">Missed</span>
+            </div>
+            <div class="kpi-progress">
+              <svg class="progress-ring" width="48" height="48">
+                <circle class="progress-ring__circle bg" stroke="var(--border)" stroke-width="4" fill="transparent" r="20" cx="24" cy="24" />
+                <circle class="progress-ring__circle val" stroke="#ef4444" stroke-width="4" fill="transparent" r="20" cx="24" cy="24" 
+                  [style.stroke-dasharray]="125.6"
+                  [style.stroke-dashoffset]="callStats?.total ? 125.6 - (125.6 * (callStats!.missed / callStats!.total)) : 125.6" />
+              </svg>
+              <div class="kpi-progress-text" style="color: #ef4444;">
+                {{ callStats?.total ? (callStats!.missed / callStats!.total * 100 | number:'1.0-0') : 0 }}%
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Loading shimmer -->
+        <div class="top-stats-row" *ngIf="statsLoading">
+          <div class="kpi-card shimmer" *ngFor="let i of [1,2,3,4]"></div>
+        </div>
+
+        <!-- Chart + breakdown row -->
+        <div class="charts-row">
+          <!-- Statistics card: centered donut + legend grid -->
+          <div class="chart-card flex-1">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem;">
+              <div>
+                <h3 style="font-size:1.15rem;color:var(--text-1);margin:0 0 0.6rem 0;font-family:var(--font-head);font-weight:700;">Statistics</h3>
+                <div style="display:flex;gap:2rem;">
+                  <div>
+                    <div style="font-size:1.4rem;font-weight:700;color:var(--text-1);font-family:var(--font-head);line-height:1.2;">{{ callStats?.total ?? 0 }}</div>
+                    <div style="font-size:0.8rem;color:var(--text-2);margin-top:2px;">Total Calls</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="stats-chart-body">
+              <div class="donut-chart-wrap">
+                <canvas id="empDonutChart"></canvas>
+                <div class="donut-center-label">
+                  <div class="donut-center-val">{{ callStats?.total ?? 0 }}</div>
+                  <div class="donut-center-sub">Total</div>
+                </div>
+              </div>
+              <div class="donut-legend-grid">
+                <div class="legend-item"><span class="lg-dot" style="background:var(--blue);"></span><span class="lg-label">Incoming</span><span class="lg-val">{{ callStats?.incoming ?? 0 }}</span></div>
+                <div class="legend-item"><span class="lg-dot" style="background:var(--green);"></span><span class="lg-label">Outgoing</span><span class="lg-val">{{ callStats?.outgoing ?? 0 }}</span></div>
+                <div class="legend-item"><span class="lg-dot" style="background:var(--red);"></span><span class="lg-label">Missed</span><span class="lg-val">{{ callStats?.missed ?? 0 }}</span></div>
+                <div class="legend-item"><span class="lg-dot" style="background:var(--orange);"></span><span class="lg-label">Rejected</span><span class="lg-val">{{ callStats?.rejected ?? 0 }}</span></div>
+              </div>
+            </div>
             <div class="chart-empty" *ngIf="!statsLoading && !callStats">No call data yet</div>
           </div>
-        </div>
 
-        <!-- Call breakdown -->
-        <div class="breakdown-card" *ngIf="callStats">
+          <!-- Call breakdown list (Legacy replacement or additional info) -->
+          <div class="breakdown-card flex-1" *ngIf="callStats">
           <div class="card-header">
             <h3 class="card-title">Call Breakdown</h3>
           </div>
@@ -336,92 +390,98 @@
           </div>
         </div>
       </div>
+      </div> <!-- end dash-grid-layout -->
     </div> <!-- end overview tab -->
 
-    <!-- ════════ LEADS TAB ════════ -->
+    <!-- ════════ LEADS TAB (Web-page Sidebar Layout) ════════ -->
     <div class="tab-content" *ngIf="dashTab==='leads'">
       <div class="dash-header-row" style="margin-bottom: 1.5rem;">
         <h2 class="dash-title">My Leads</h2>
-      </div>
-
-      <!-- Filters bar -->
-      <div class="leads-toolbar">
-        <div class="search-wrap">
-          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input id="leadSearch" class="search-input" type="text" placeholder="Search leads…" [(ngModel)]="leadSearch"/>
+        <div style="display:flex; gap: 0.75rem;">
+          <select id="leadSetFilter" class="filter-select" [(ngModel)]="selectedLeadSet" (change)="onLeadSetChange(selectedLeadSet)">
+            <option value="">All Sets</option>
+            <option *ngFor="let s of leadSets" [value]="s">{{ s }}</option>
+          </select>
+          <select id="leadStatusFilter" class="filter-select" [(ngModel)]="leadStatusFilter">
+            <option value="">All Status</option>
+            <option *ngFor="let st of LEAD_STATUSES" [value]="st">{{ st }}</option>
+          </select>
         </div>
-
-        <select id="leadSetFilter" class="filter-select" [(ngModel)]="selectedLeadSet" (change)="onLeadSetChange(selectedLeadSet)">
-          <option value="">All Sets</option>
-          <option *ngFor="let s of leadSets" [value]="s">{{ s }}</option>
-        </select>
-
-        <select id="leadStatusFilter" class="filter-select" [(ngModel)]="leadStatusFilter">
-          <option value="">All Status</option>
-          <option *ngFor="let st of LEAD_STATUSES" [value]="st">{{ st }}</option>
-        </select>
       </div>
 
-      <!-- Loading -->
-      <div class="loading-row" *ngIf="leadsLoading">
-        <div class="spinner"></div> Loading leads…
-      </div>
-
-      <!-- Empty -->
-      <div class="empty-state" *ngIf="!leadsLoading && filteredLeads.length === 0">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-          <circle cx="9" cy="7" r="4"/>
-        </svg>
-        <p>No leads found</p>
-      </div>
-
-      <!-- Lead cards grid -->
-      <div class="leads-grid" *ngIf="!leadsLoading && filteredLeads.length > 0">
-        <div class="lead-card" *ngFor="let lead of filteredLeads">
-          <div class="lead-card-top">
-            <div class="lead-company">{{ lead.leadCompanyName }}</div>
-            <span class="status-badge" [ngClass]="getLeadStatusClass(lead.status)">{{ lead.status }}</span>
+      <div class="leads-container">
+        <!-- Sidebar: Company List -->
+        <div class="leads-sidebar">
+          <div class="leads-sidebar-header">
+            <div style="font-weight: 700; color: var(--text-1); font-size: 0.95rem;">Companies</div>
+            <div style="font-size: 0.75rem; color: var(--text-3); margin-top: 4px;">{{ uniqueLeadCompanies.length }} companies</div>
           </div>
-          <div class="lead-contact">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
-            </svg>
-            {{ lead.contactName || '—' }}
-          </div>
-          <div class="lead-phone">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.29 18a19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-7.71A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91A16 16 0 0 0 14 15.82l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-            </svg>
-            {{ lead.contactNumber }}
-          </div>
-          <div class="lead-meta" *ngIf="lead.setLabel">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
-            </svg>
-            {{ lead.setLabel }}
-          </div>
-
-          <!-- Status updater -->
-          <div class="lead-actions">
-            <select
-              class="status-select"
-              [ngClass]="getLeadStatusClass(lead.status)"
-              [ngModel]="lead.status"
-              (ngModelChange)="updateLeadStatus(lead, $event)"
-              [disabled]="updatingLeadId === lead._id"
-            >
-              <option *ngFor="let st of LEAD_STATUSES" [value]="st">{{ st }}</option>
-            </select>
-            <div class="updating-badge" *ngIf="updatingLeadId === lead._id">
-              <div class="spinner-sm"></div>
+          <div class="leads-list">
+            <div *ngFor="let company of uniqueLeadCompanies" class="lead-item"
+              [class.active]="selectedLeadCompany === company" (click)="selectLeadCompany(company)">
+              <div class="lead-item-name">{{ company }}</div>
+              <div class="lead-item-meta">{{ leads.filter(l => l.leadCompanyName === company).length }} contacts</div>
+            </div>
+            <div *ngIf="uniqueLeadCompanies.length === 0" class="leads-empty-state" style="padding: 2rem;">
+              No companies found
             </div>
           </div>
         </div>
+
+        <!-- Detail View: Contact Cards -->
+        <div class="lead-detail-view">
+          <div *ngIf="selectedLeadCompany">
+            <div class="customer-detail-header">
+              <div class="cd-header-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+                  <path d="M9 22v-4h6v4"></path>
+                </svg>
+              </div>
+              <h3 class="cd-header-title">{{ selectedLeadCompany }}</h3>
+            </div>
+
+            <div class="leads-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+              <div *ngFor="let lead of leadsInSelectedCompany" class="lead-card">
+                <div class="lead-card-top">
+                  <div class="lead-company">{{ lead.contactName || 'Primary Contact' }}</div>
+                  <span class="status-badge" [ngClass]="getLeadStatusClass(lead.status)">{{ lead.status }}</span>
+                </div>
+                <div class="lead-phone">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.29 18a19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-7.71A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91A16 16 0 0 0 14 15.82l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  {{ lead.contactNumber }}
+                </div>
+                <div class="lead-meta" *ngIf="lead.setLabel">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
+                  </svg>
+                  {{ lead.setLabel }}
+                </div>
+                <div class="lead-actions">
+                  <select class="status-select" [ngClass]="getLeadStatusClass(lead.status)" [ngModel]="lead.status" (ngModelChange)="updateLeadStatus(lead, $event)" [disabled]="updatingLeadId === lead._id">
+                    <option *ngFor="let st of LEAD_STATUSES" [value]="st">{{ st }}</option>
+                  </select>
+                  <div class="updating-badge" *ngIf="updatingLeadId === lead._id">
+                    <div class="spinner-sm"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!selectedLeadCompany" class="leads-empty-state">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1">
+              <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
+              <path d="M9 22v-4h6v4"></path>
+            </svg>
+            <h3 style="margin-top: 1rem;">Select a company to view leads</h3>
+            <p>Click on a company from the left list to see contact details</p>
+          </div>
+        </div>
       </div>
-    </div> <!-- end leads tab -->
+    </div>
 
     <!-- ════════ FOLLOW-UPS TAB ════════ -->
     <div class="tab-content" *ngIf="dashTab==='followups'">
