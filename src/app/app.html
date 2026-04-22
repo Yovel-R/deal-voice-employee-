@@ -70,15 +70,10 @@
 <!-- ========== DASHBOARD ========== -->
 <div class="dashboard-wrapper" *ngIf="loggedIn">
   
-  <!-- Dashboard Navbar (Matches web-page style) -->
+  <!-- Dashboard Navbar -->
   <nav class="navbar dashboard-nav">
     <div class="nav-container">
       <div class="nav-brand" (click)="dashTab='overview'" style="cursor:pointer;">
-        <button class="dash-hamburger" (click)="sidebarOpen = !sidebarOpen">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M4 6h16M4 12h16M4 18h16" stroke-linecap="round" />
-          </svg>
-        </button>
         <div class="brand-icon">
           <img src="assets/icon/logo.png" alt="DealVoice Logo" style="height: 38px;">
         </div>
@@ -101,7 +96,7 @@
     <!-- Mobile Sidebar Overlay -->
     <div class="dash-sidebar-overlay" [class.active]="sidebarOpen" (click)="sidebarOpen = false"></div>
 
-    <!-- Sidebar (Matches web-page style) -->
+    <!-- Sidebar -->
     <aside class="dash-sidebar" [class.active]="sidebarOpen" [class.minimized]="sidebarMinimized">
       <div class="sidebar-nav-list">
         <div class="sidebar-top">
@@ -180,10 +175,8 @@
       </div>
 
       <div class="dash-grid-layout">
-        <!-- Stat cards (KPI Style) -->
+        <!-- Stat cards -->
         <div class="top-stats-row" *ngIf="!statsLoading">
-          
-          <!-- Card 1: Total Calls -->
           <div class="kpi-card">
             <div class="kpi-info">
               <span class="kpi-val">{{ callStats?.total ?? '—' }}</span>
@@ -197,8 +190,6 @@
               <div class="kpi-progress-text" style="color: #3b82f6;">All</div>
             </div>
           </div>
-
-          <!-- Card 2: Connected -->
           <div class="kpi-card">
             <div class="kpi-info">
               <span class="kpi-val">{{ callStats?.connected ?? '—' }}</span>
@@ -216,8 +207,6 @@
               </div>
             </div>
           </div>
-
-          <!-- Card 3: Talk Time -->
           <div class="kpi-card">
             <div class="kpi-info">
               <span class="kpi-val">{{ fmtDur(callStats?.totalDuration ?? 0) }}</span>
@@ -231,8 +220,6 @@
               <div class="kpi-progress-text" style="color: #f59e0b;">Dur</div>
             </div>
           </div>
-
-          <!-- Card 4: Missed -->
           <div class="kpi-card">
             <div class="kpi-info">
               <span class="kpi-val">{{ callStats?.missed ?? '—' }}</span>
@@ -252,14 +239,12 @@
           </div>
         </div>
 
-        <!-- Loading shimmer -->
         <div class="top-stats-row" *ngIf="statsLoading">
           <div class="kpi-card shimmer" *ngFor="let i of [1,2,3,4]"></div>
         </div>
 
-        <!-- Chart + breakdown row -->
+        <!-- Charts row -->
         <div class="charts-row">
-          <!-- Statistics card: centered donut + legend grid -->
           <div class="chart-card flex-1">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:1.25rem;">
               <div>
@@ -272,7 +257,6 @@
                 </div>
               </div>
             </div>
-
             <div class="stats-chart-body">
               <div class="donut-chart-wrap">
                 <canvas id="empDonutChart"></canvas>
@@ -288,112 +272,86 @@
                 <div class="legend-item"><span class="lg-dot" style="background:var(--orange);"></span><span class="lg-label">Rejected</span><span class="lg-val">{{ callStats?.rejected ?? 0 }}</span></div>
               </div>
             </div>
-            <div class="chart-empty" *ngIf="!statsLoading && !callStats">No call data yet</div>
           </div>
 
-          <!-- Call breakdown list (Legacy replacement or additional info) -->
+          <div class="chart-card flex-1">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+              <h3 style="font-size:1.15rem; color:var(--text-1); margin:0; font-family:var(--font-head); font-weight:700;">Analytics</h3>
+              <div class="chart-switcher-pills">
+                <button [class.active]="chartType === 'line'" (click)="setChartType('line')" title="Line Graph">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M3 3v18h18" /><path d="M18 9l-5 5-4-4-5 5" />
+                  </svg>
+                </button>
+                <button [class.active]="chartType === 'bar'" (click)="setChartType('bar')" title="Bar Chart">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M18 20V10" /><path d="M12 20V4" /><path d="M6 20v-6" /><path d="M3 3v18h18" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+            <div style="height: 300px; position: relative;">
+              <canvas id="timelineChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <div class="charts-row" style="margin-top: 2rem;">
+          <!-- Call breakdown list -->
           <div class="breakdown-card flex-1" *ngIf="callStats">
-          <div class="card-header">
-            <h3 class="card-title">Call Breakdown</h3>
-          </div>
-          <div class="breakdown-list">
-            <div class="breakdown-row">
-              <div class="brow-label">
-                <span class="dot blue-dot"></span> Incoming
+            <div class="card-header">
+              <h3 class="card-title">Call Breakdown</h3>
+            </div>
+            <div class="breakdown-list">
+              <div class="breakdown-row">
+                <div class="brow-label"><span class="dot blue-dot"></span> Incoming</div>
+                <div class="brow-vals"><span class="brow-count">{{ callStats.incoming }}</span><span class="brow-dur">{{ fmtDur(callStats.incomingDuration) }}</span></div>
               </div>
-              <div class="brow-vals">
-                <span class="brow-count">{{ callStats.incoming }}</span>
-                <span class="brow-dur">{{ fmtDur(callStats.incomingDuration) }}</span>
+              <div class="breakdown-row">
+                <div class="brow-label"><span class="dot green-dot"></span> Outgoing</div>
+                <div class="brow-vals"><span class="brow-count">{{ callStats.outgoing }}</span><span class="brow-dur">{{ fmtDur(callStats.outgoingDuration) }}</span></div>
+              </div>
+              <div class="breakdown-row">
+                <div class="brow-label"><span class="dot orange-dot"></span> Missed</div>
+                <div class="brow-vals"><span class="brow-count">{{ callStats.missed }}</span><span class="brow-dur">—</span></div>
+              </div>
+              <div class="breakdown-row">
+                <div class="brow-label"><span class="dot red-dot"></span> Rejected</div>
+                <div class="brow-vals"><span class="brow-count">{{ callStats.rejected }}</span><span class="brow-dur">—</span></div>
               </div>
             </div>
-            <div class="breakdown-row">
-              <div class="brow-label">
-                <span class="dot green-dot"></span> Outgoing
-              </div>
-              <div class="brow-vals">
-                <span class="brow-count">{{ callStats.outgoing }}</span>
-                <span class="brow-dur">{{ fmtDur(callStats.outgoingDuration) }}</span>
-              </div>
+            <div class="card-header" style="margin-top:24px;">
+              <h3 class="card-title">Lead Summary</h3>
             </div>
-            <div class="breakdown-row">
-              <div class="brow-label">
-                <span class="dot orange-dot"></span> Missed
-              </div>
-              <div class="brow-vals">
-                <span class="brow-count">{{ callStats.missed }}</span>
-                <span class="brow-dur">—</span>
-              </div>
-            </div>
-            <div class="breakdown-row">
-              <div class="brow-label">
-                <span class="dot red-dot"></span> Rejected
-              </div>
-              <div class="brow-vals">
-                <span class="brow-count">{{ callStats.rejected }}</span>
-                <span class="brow-dur">—</span>
-              </div>
+            <div class="lead-mini-grid">
+              <div class="lead-mini blue"><div class="lm-val">{{ totalLeads }}</div><div class="lm-lbl">Total Leads</div></div>
+              <div class="lead-mini green"><div class="lm-val">{{ convertedLeads }}</div><div class="lm-lbl">Converted</div></div>
+              <div class="lead-mini orange"><div class="lm-val">{{ pendingLeads }}</div><div class="lm-lbl">Pending</div></div>
             </div>
           </div>
 
-          <!-- Lead summary mini cards -->
-          <div class="card-header" style="margin-top:24px;">
-            <h3 class="card-title">Lead Summary</h3>
-          </div>
-          <div class="lead-mini-grid">
-            <div class="lead-mini blue">
-              <div class="lm-val">{{ totalLeads }}</div>
-              <div class="lm-lbl">Total Leads</div>
+          <!-- Employee info card -->
+          <div class="emp-info-card flex-1">
+            <div class="card-header">
+              <h3 class="card-title">My Profile</h3>
             </div>
-            <div class="lead-mini green">
-              <div class="lm-val">{{ convertedLeads }}</div>
-              <div class="lm-lbl">Converted</div>
-            </div>
-            <div class="lead-mini orange">
-              <div class="lm-val">{{ pendingLeads }}</div>
-              <div class="lm-lbl">Pending</div>
+            <div class="emp-info-grid">
+              <div class="emp-info-row"><span class="ei-label">Name</span><span class="ei-val">{{ employee?.name }}</span></div>
+              <div class="emp-info-row"><span class="ei-label">Mobile</span><span class="ei-val">{{ employee?.mobile }}</span></div>
+              <div class="emp-info-row"><span class="ei-label">Company</span><span class="ei-val">{{ companyName || '—' }}</span></div>
+              <div class="emp-info-row"><span class="ei-label">Company Code</span><span class="ei-val code-pill">{{ employee?.companyCode }}</span></div>
+              <div class="emp-info-row" *ngIf="employee?.lastSyncTime"><span class="ei-label">Last Sync</span><span class="ei-val">{{ fmtDate(employee?.lastSyncTime) }}</span></div>
+              <div class="emp-info-row" *ngIf="employee?.tags && employee!.tags!.length > 0">
+                <span class="ei-label">Tags</span>
+                <span class="ei-val tags-row"><span class="tag-chip" *ngFor="let tag of employee?.tags">{{ tag }}</span></span>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-
-      <!-- Employee info card -->
-      <div class="emp-info-card">
-        <div class="card-header">
-          <h3 class="card-title">My Profile</h3>
-        </div>
-        <div class="emp-info-grid">
-          <div class="emp-info-row">
-            <span class="ei-label">Name</span>
-            <span class="ei-val">{{ employee?.name }}</span>
-          </div>
-          <div class="emp-info-row">
-            <span class="ei-label">Mobile</span>
-            <span class="ei-val">{{ employee?.mobile }}</span>
-          </div>
-          <div class="emp-info-row">
-            <span class="ei-label">Company</span>
-            <span class="ei-val">{{ companyName || '—' }}</span>
-          </div>
-          <div class="emp-info-row">
-            <span class="ei-label">Company Code</span>
-            <span class="ei-val code-pill">{{ employee?.companyCode }}</span>
-          </div>
-          <div class="emp-info-row" *ngIf="employee?.lastSyncTime">
-            <span class="ei-label">Last Sync</span>
-            <span class="ei-val">{{ fmtDate(employee?.lastSyncTime) }}</span>
-          </div>
-          <div class="emp-info-row" *ngIf="employee?.tags && employee!.tags!.length > 0">
-            <span class="ei-label">Tags</span>
-            <span class="ei-val tags-row">
-              <span class="tag-chip" *ngFor="let tag of employee?.tags">{{ tag }}</span>
-            </span>
-          </div>
-        </div>
-      </div>
       </div> <!-- end dash-grid-layout -->
     </div> <!-- end overview tab -->
 
-    <!-- ════════ LEADS TAB (Web-page Sidebar Layout) ════════ -->
+    <!-- ════════ LEADS TAB ════════ -->
     <div class="tab-content" *ngIf="dashTab==='leads'">
       <div class="dash-header-row" style="margin-bottom: 1.5rem;">
         <h2 class="dash-title">My Leads</h2>
@@ -421,9 +379,6 @@
               [class.active]="selectedLeadCompany === company" (click)="selectLeadCompany(company)">
               <div class="lead-item-name">{{ company }}</div>
               <div class="lead-item-meta">{{ leads.filter(l => l.leadCompanyName === company).length }} contacts</div>
-            </div>
-            <div *ngIf="uniqueLeadCompanies.length === 0" class="leads-empty-state" style="padding: 2rem;">
-              No companies found
             </div>
           </div>
         </div>
@@ -463,6 +418,11 @@
                   <select class="status-select" [ngClass]="getLeadStatusClass(lead.status)" [ngModel]="lead.status" (ngModelChange)="updateLeadStatus(lead, $event)" [disabled]="updatingLeadId === lead._id">
                     <option *ngFor="let st of LEAD_STATUSES" [value]="st">{{ st }}</option>
                   </select>
+                  <button class="btn-followup-icon" (click)="openFollowupModal(lead)" title="Add Follow-up">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+                    </svg>
+                  </button>
                   <div class="updating-badge" *ngIf="updatingLeadId === lead._id">
                     <div class="spinner-sm"></div>
                   </div>
@@ -472,10 +432,7 @@
           </div>
 
           <div *ngIf="!selectedLeadCompany" class="leads-empty-state">
-            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1">
-              <rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect>
-              <path d="M9 22v-4h6v4"></path>
-            </svg>
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path></svg>
             <h3 style="margin-top: 1rem;">Select a company to view leads</h3>
             <p>Click on a company from the left list to see contact details</p>
           </div>
@@ -491,64 +448,141 @@
 
       <div class="leads-toolbar">
         <div class="search-wrap">
-          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
+          <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="followupSearch" class="search-input" type="text" placeholder="Search follow-ups…" [(ngModel)]="followupSearch"/>
         </div>
       </div>
 
-      <div class="loading-row" *ngIf="followupsLoading">
-        <div class="spinner"></div> Loading follow-ups…
-      </div>
-
-      <div class="empty-state" *ngIf="!followupsLoading && filteredFollowups.length === 0">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
-        <p>No follow-ups yet</p>
-      </div>
-
       <div class="followup-grid" *ngIf="!followupsLoading && filteredFollowups.length > 0">
         <div class="followup-card" *ngFor="let b of filteredFollowups">
-          <div class="fu-top">
-            <div class="fu-name">{{ b.contactName || b.contactNumber }}</div>
-            <div class="fu-company">{{ b.companyName }}</div>
+          <div class="fu-header-row">
+            <div class="fu-top">
+              <div class="fu-name">{{ b.contactName || b.contactNumber }}</div>
+              <div class="fu-company">{{ b.companyName }}</div>
+            </div>
+            <button class="btn-edit-followup" (click)="openEditFollowupModal(b)" title="Edit Follow-up">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
           </div>
           <div class="fu-phone">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.29 18a19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-7.71A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91A16 16 0 0 0 14 15.82l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
-            </svg>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.29 18a19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-7.71A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91A16 16 0 0 0 14 15.82l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
             {{ b.contactNumber }}
           </div>
-
           <div class="fu-desc" *ngIf="b.description">{{ b.description }}</div>
-
-          <!-- Checklist pills -->
           <div class="fu-flags">
             <span class="fu-flag" [class.active]="b.brochuresSent">Brochure</span>
             <span class="fu-flag" [class.active]="b.techMeet">Tech Meet</span>
+            <span class="fu-flag" [class.active]="b.meetingRemarks">Meeting Done</span>
             <span class="fu-flag" [class.active]="b.quotationSent">Quotation</span>
             <span class="fu-flag" [class.active]="b.proposalSent">Proposal</span>
             <span class="fu-flag" [class.active]="b.whatsappGrp">WhatsApp</span>
           </div>
-
-          <div class="fu-reminder" *ngIf="b.reminderDate">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-            </svg>
-            Reminder: {{ fmtDate(b.reminderDate) }}
-          </div>
-
-          <!-- Remarks list -->
-          <div class="fu-remarks" *ngIf="b.remarks && b.remarks.length > 0">
-            <div class="fu-remarks-title">Remarks</div>
+          <div class="fu-remarks" *ngIf="b.remarks.length">
+            <div class="fu-remarks-title">Remarks History</div>
             <div class="fu-remark" *ngFor="let r of b.remarks">{{ r }}</div>
+          </div>
+          <div class="fu-reminder" *ngIf="b.reminderDate"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Next Follow-up: {{ fmtDate(b.reminderDate) }}</div>
+        </div>
+      </div>
+    </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ════════ SAVE FOLLOW-UP MODAL (Matches Mobile App UI) ════════ -->
+<div class="modal-overlay" *ngIf="showFollowupModal">
+  <div class="followup-modal">
+    <div class="modal-header">
+      <div class="modal-icon-wrap">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4f46e5" stroke-width="2">
+          <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+        </svg>
+      </div>
+      <h2>{{ editingBookmarkId ? 'Edit Follow Up' : 'Save Follow Up' }}</h2>
+      <button class="modal-close" (click)="closeFollowupModal()">&times;</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="contact-mini-info">
+        CONTACT: {{ followupLead?.contactName || 'Unknown' }} ({{ followupLead?.contactNumber }})
+      </div>
+
+      <div class="checkbox-grid">
+        <label class="cb-item">
+          <input type="checkbox" [(ngModel)]="followupForm.brochuresSent">
+          <span class="cb-box"></span>
+          <span class="cb-label">Brochures</span>
+        </label>
+        <label class="cb-item">
+          <input type="checkbox" [(ngModel)]="followupForm.techMeet">
+          <span class="cb-box"></span>
+          <span class="cb-label">Tech Meet</span>
+        </label>
+        <label class="cb-item">
+          <input type="checkbox" [(ngModel)]="followupForm.meetingRemarks">
+          <span class="cb-box"></span>
+          <span class="cb-label">Meeting Done</span>
+        </label>
+        <label class="cb-item">
+          <input type="checkbox" [(ngModel)]="followupForm.quotationSent">
+          <span class="cb-box"></span>
+          <span class="cb-label">Quotation</span>
+        </label>
+        <label class="cb-item">
+          <input type="checkbox" [(ngModel)]="followupForm.proposalSent">
+          <span class="cb-box"></span>
+          <span class="cb-label">Proposal</span>
+        </label>
+        <label class="cb-item">
+          <input type="checkbox" [(ngModel)]="followupForm.whatsappGrp">
+          <span class="cb-box"></span>
+          <span class="cb-label">WA Group</span>
+        </label>
+      </div>
+
+      <div class="modal-field">
+        <label>CLIENT REQUIREMENT / NOTE</label>
+        <textarea placeholder="Type requirement or details here..." [(ngModel)]="followupForm.description"></textarea>
+      </div>
+
+      <div class="modal-field" *ngIf="followupForm.remarks.length > 0">
+        <label>HISTORICAL REMARKS</label>
+        <div class="historical-remarks-list">
+          <div class="hist-remark-item" *ngFor="let r of followupForm.remarks; let i = index; trackBy: trackByFn">
+            <input type="text" [(ngModel)]="followupForm.remarks[i]" placeholder="Edit remark..." />
+            <button class="btn-remove-remark" (click)="removeRemark(i)" title="Remove Remark">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            </button>
           </div>
         </div>
       </div>
-    </div> <!-- end followups tab -->
 
-    </main><!-- end dash-main -->
-  </div><!-- end dash-body -->
-</div><!-- end dashboard-wrapper -->
+      <div class="modal-field">
+        <label>REMARKS (NEW)</label>
+        <input type="text" placeholder="Add a new remark to history..." [(ngModel)]="followupForm.newRemark" />
+      </div>
+
+      <div class="modal-field">
+        <label>SET FOLLOW-UP DATE</label>
+        <div class="date-input-wrap">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <input type="date" [(ngModel)]="followupForm.reminderDate">
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-cancel" (click)="closeFollowupModal()">Cancel</button>
+      <button class="btn-save" (click)="saveFollowup()" [disabled]="followupSaving">
+        <span *ngIf="!followupSaving">{{ editingBookmarkId ? 'Update Follow Up' : 'Save Follow Up' }}</span>
+        <span *ngIf="followupSaving" class="btn-spinner"></span>
+      </button>
+    </div>
+  </div>
+</div>

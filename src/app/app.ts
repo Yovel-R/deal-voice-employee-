@@ -1,12 +1,11 @@
 import { Component, OnInit, OnDestroy, ViewEncapsulation } from '@angular/core';
 import { NgIf, NgFor, NgClass, DecimalPipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { HttpClient } from '@angular/common/http';
 import { Chart, registerables } from 'chart.js';
 import { Subscription } from 'rxjs';
 import { RealtimeService, SSEEvent } from './realtime.service';
-
-const API = 'http://localhost:4000';
+import { ApiService } from './api.service';
 
 interface Employee {
   _id: string;
@@ -42,6 +41,7 @@ interface Bookmark {
   remarks: string[];
   brochuresSent: boolean;
   techMeet: boolean;
+  meetingRemarks: boolean;
   quotationSent: boolean;
   proposalSent: boolean;
   whatsappGrp: boolean;
@@ -71,8 +71,6 @@ interface CallStats {
 })
 export class App implements OnInit, OnDestroy {
 
-  readonly BASE = API;
-
   private sseSub?: Subscription;
 
   // ── Auth ─────────────────────────────────────────────────────
@@ -94,6 +92,9 @@ export class App implements OnInit, OnDestroy {
   callStats: CallStats | null = null;
   statsLoading = false;
   donutChart: Chart | null = null;
+  timelineChart: Chart | null = null;
+  timelineData: any[] = [];
+  chartType: 'line' | 'bar' = 'line';
 
   // ── Leads ─────────────────────────────────────────────────────
   leads: Lead[] = [];
@@ -156,13 +157,153 @@ export class App implements OnInit, OnDestroy {
     );
   }
 
+  // ── Follow-up Modal State ─────────────────────────────────────
+  showFollowupModal = false;
+  followupSaving = false;
+  followupLead: Lead | null = null;
+  editingBookmarkId: string | null = null;
+  followupForm = {
+    brochuresSent: false,
+    techMeet: false,
+    meetingRemarks: false,
+    quotationSent: false,
+    proposalSent: false,
+    whatsappGrp: false,
+    description: '',
+    remarks: [] as string[],
+    newRemark: '',
+    reminderDate: ''
+  };
+
+  openFollowupModal(lead: Lead): void {
+    this.followupLead = lead;
+    this.editingBookmarkId = null;
+    this.showFollowupModal = true;
+    // Reset form
+    this.followupForm = {
+      brochuresSent: false,
+      techMeet: false,
+      meetingRemarks: false,
+      quotationSent: false,
+      proposalSent: false,
+      whatsappGrp: false,
+      description: '',
+      remarks: [],
+      newRemark: '',
+      reminderDate: ''
+    };
+    
+    // Check if there is an existing bookmark for this contact to pre-fill
+    const existing = this.followups.find(f => f.contactNumber === lead.contactNumber);
+    if (existing) {
+      this.editingBookmarkId = existing._id;
+      this.followupForm.brochuresSent = existing.brochuresSent;
+      this.followupForm.techMeet = existing.techMeet;
+      this.followupForm.meetingRemarks = existing.meetingRemarks;
+      this.followupForm.quotationSent = existing.quotationSent;
+      this.followupForm.proposalSent = existing.proposalSent;
+      this.followupForm.whatsappGrp = existing.whatsappGrp;
+      this.followupForm.description = existing.description;
+      this.followupForm.remarks = [...(existing.remarks || [])];
+      if (existing.reminderDate) {
+        this.followupForm.reminderDate = new Date(existing.reminderDate).toISOString().split('T')[0];
+      }
+    }
+  }
+
+  openEditFollowupModal(b: Bookmark): void {
+    this.editingBookmarkId = b._id;
+    this.followupLead = {
+      _id: '',
+      companyCode: b.companyCode,
+      assignedEmployeePhone: b.employeePhone,
+      leadCompanyName: b.companyName,
+      contactName: b.contactName,
+      contactNumber: b.contactNumber,
+      status: '',
+      setLabel: '',
+    };
+    this.showFollowupModal = true;
+    this.followupForm = {
+      brochuresSent: b.brochuresSent,
+      techMeet: b.techMeet,
+      meetingRemarks: b.meetingRemarks,
+      quotationSent: b.quotationSent,
+      proposalSent: b.proposalSent,
+      whatsappGrp: b.whatsappGrp,
+      description: b.description,
+      remarks: [...(b.remarks || [])],
+      newRemark: '',
+      reminderDate: b.reminderDate ? new Date(b.reminderDate).toISOString().split('T')[0] : ''
+    };
+  }
+
+  removeRemark(index: number): void {
+    this.followupForm.remarks.splice(index, 1);
+  }
+
+  trackByFn(index: any, item: any) {
+    return index;
+  }
+
+  closeFollowupModal(): void {
+    this.showFollowupModal = false;
+    this.followupLead = null;
+    this.editingBookmarkId = null;
+  }
+
+  saveFollowup(): void {
+    if (!this.followupLead || !this.employee) return;
+    this.followupSaving = true;
+
+    const body = {
+      companyCode: this.employee.companyCode,
+      employeePhone: this.employee.mobile,
+      contactNumber: this.followupLead.contactNumber,
+      contactName: this.followupLead.contactName,
+      companyName: this.followupLead.leadCompanyName,
+      description: this.followupForm.description,
+      brochuresSent: this.followupForm.brochuresSent,
+      techMeet: this.followupForm.techMeet,
+      meetingRemarks: this.followupForm.meetingRemarks,
+      quotationSent: this.followupForm.quotationSent,
+      proposalSent: this.followupForm.proposalSent,
+      whatsappGrp: this.followupForm.whatsappGrp,
+      reminderDate: this.followupForm.reminderDate || undefined,
+      remarks: this.followupForm.remarks, // Send updated historical remarks
+      newRemark: this.followupForm.newRemark.trim() || undefined
+    };
+
+    if (this.editingBookmarkId) {
+      this.api.patch<any>(`/api/bookmarks/${this.editingBookmarkId}`, body).subscribe({
+        next: res => {
+          this.followupSaving = false;
+          if (res.success) {
+            this.closeFollowupModal();
+            this.fetchFollowups();
+          }
+        },
+        error: () => { this.followupSaving = false; }
+      });
+    } else {
+      this.api.post<any>(`/api/bookmarks`, body).subscribe({
+        next: res => {
+          this.followupSaving = false;
+          if (res.success) {
+            this.closeFollowupModal();
+            this.fetchFollowups();
+          }
+        },
+        error: () => { this.followupSaving = false; }
+      });
+    }
+  }
+
   // ── Util ──────────────────────────────────────────────────────
   sidebarOpen = false;
   sidebarMinimized = false;
 
-  private headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-
-  constructor(private http: HttpClient, private sse: RealtimeService) { }
+  constructor(private http: HttpClient, private sse: RealtimeService, public api: ApiService) { }
 
   ngOnInit(): void {
     Chart.register(...registerables);
@@ -195,18 +336,18 @@ export class App implements OnInit, OnDestroy {
     this.loginLoading = true;
     this.loginError = '';
 
-    this.http.post<any>(`${API}/api/employees/login`, {
+    this.api.post<any>(`/api/employees/login`, {
       companyCode: companyCode.trim(),
       mobile: mobile.trim(),
       countryCode: this.loginForm.countryCode,
-    }, { headers: this.headers }).subscribe({
+    }).subscribe({
       next: res => {
         this.loginLoading = false;
         if (res.success) {
           this.employee = res.employee;
 
           // Also fetch company name
-          this.http.get<any>(`${API}/api/auth/company/${companyCode.trim()}`).subscribe({
+          this.api.get<any>(`/api/auth/company/${companyCode.trim()}`).subscribe({
             next: cr => {
               this.companyName = cr.company?.companyName || '';
               localStorage.setItem('dv_employee', JSON.stringify({
@@ -292,7 +433,12 @@ export class App implements OnInit, OnDestroy {
   switchTab(tab: 'overview' | 'leads' | 'followups'): void {
     this.dashTab = tab;
     this.sidebarOpen = false;
-    if (tab === 'overview') setTimeout(() => this.renderDonutChart(), 100);
+    if (tab === 'overview') {
+      setTimeout(() => {
+        this.renderDonutChart();
+        this.renderTimelineChart();
+      }, 150);
+    }
   }
 
   onPeriodChange(p: 'today' | 'yesterday' | 'lastweek'): void {
@@ -305,18 +451,158 @@ export class App implements OnInit, OnDestroy {
     if (!this.employee) return;
     this.statsLoading = true;
     const { companyCode, mobile } = this.employee;
-    this.http.get<any>(
-      `${API}/api/calllogs/employee?companyCode=${companyCode}&phone=${mobile}&period=${this.selectedPeriod}`
+    this.api.get<any>(
+      `/api/calllogs/employee?companyCode=${companyCode}&phone=${mobile}&period=${this.selectedPeriod}`
     ).subscribe({
       next: res => {
         this.statsLoading = false;
         if (res.success) {
           this.callStats = res.stats;
-          if (this.dashTab === 'overview') setTimeout(() => this.renderDonutChart(), 100);
+          if (this.dashTab === 'overview') {
+            setTimeout(() => this.renderDonutChart(), 100);
+          }
         }
       },
       error: () => { this.statsLoading = false; }
     });
+    this.fetchTimeline();
+  }
+
+  fetchTimeline(): void {
+    if (!this.employee) return;
+    const { companyCode, mobile } = this.employee;
+    this.api.get<any>(
+      `/api/calllogs/timeline?companyCode=${companyCode}&phone=${mobile}&period=${this.selectedPeriod}`
+    ).subscribe({
+      next: res => {
+        if (res.success) {
+          this.timelineData = res.timeline;
+          if (this.dashTab === 'overview') {
+            setTimeout(() => this.renderTimelineChart(), 150);
+          }
+        }
+      }
+    });
+  }
+
+  setChartType(type: 'line' | 'bar'): void {
+    this.chartType = type;
+    setTimeout(() => this.renderTimelineChart(), 50);
+  }
+
+  renderTimelineChart(): void {
+    if (this.timelineChart) { this.timelineChart.destroy(); this.timelineChart = null; }
+    const canvas = document.getElementById('timelineChart') as HTMLCanvasElement;
+    if (!canvas) return;
+
+    const textColor = 'rgba(80,80,100,0.6)';
+    const gridColor = 'rgba(0,0,0,0.04)';
+    const ctx = canvas.getContext('2d');
+
+    let chartType: any = this.chartType;
+    let data: any;
+    let options: any;
+
+    if (this.chartType === 'line') {
+      // Timeline Trend
+      if (!this.timelineData.length) return;
+      
+      const filtered = this.timelineData.filter(d => 
+        ((d.incoming || 0) + (d.outgoing || 0) + (d.missed || 0) + (d.rejected || 0)) > 0
+      );
+      
+      if (!filtered.length) return;
+
+      const isHourly = filtered.length > 0 && filtered[0]._isHourly;
+      const labels = filtered.map(d => {
+        const dt = new Date(d.date);
+        if (isHourly) {
+          const h = dt.getHours();
+          const ampm = h >= 12 ? 'PM' : 'AM';
+          const displayH = h % 12 || 12;
+          return `${String(displayH).padStart(2, '0')} ${ampm}`;
+        }
+        return dt.toLocaleDateString('en-US', { weekday: 'short' });
+      });
+      const totalCalls = filtered.map(d =>
+        (d.incoming || 0) + (d.outgoing || 0) + (d.missed || 0) + (d.rejected || 0)
+      );
+
+      const grad = ctx ? ctx.createLinearGradient(0, 0, 0, 300) : null;
+      if (grad) {
+        grad.addColorStop(0, 'rgba(61,125,254,0.2)');
+        grad.addColorStop(1, 'rgba(61,125,254,0)');
+      }
+
+      data = {
+        labels: labels,
+        datasets: [{
+          label: 'Total Calls',
+          data: totalCalls,
+          borderColor: '#3D7DFE',
+          backgroundColor: grad ?? 'rgba(61,125,254,0.1)',
+          fill: true,
+          tension: 0.4,
+          borderWidth: 3,
+          pointRadius: 4,
+          pointBackgroundColor: '#fff',
+          pointBorderColor: '#3D7DFE',
+          pointBorderWidth: 2
+        }]
+      };
+      options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: '#1e293b', padding: 12, cornerRadius: 8 }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: textColor } },
+          y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor } }
+        }
+      };
+
+    } else {
+      // Category Breakdown (Bar)
+      if (!this.callStats) return;
+      const counts = [
+        this.callStats.incoming || 0,
+        this.callStats.outgoing || 0,
+        this.callStats.missed || 0,
+        this.callStats.rejected || 0
+      ];
+      const labels = ['Incoming', 'Outgoing', 'Missed', 'Rejected'];
+      const colors = ['#3b82f6', '#22c55e', '#f87171', '#f59e0b'];
+
+      data = {
+        labels: labels,
+        datasets: [{
+          label: 'Call Count',
+          data: counts,
+          backgroundColor: colors,
+          borderColor: 'transparent',
+          borderWidth: 0,
+          borderRadius: 8,
+          barPercentage: 0.6
+        }]
+      };
+
+      options = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { display: false },
+          tooltip: { backgroundColor: '#1e293b', padding: 12, cornerRadius: 8 }
+        },
+        scales: {
+          x: { grid: { display: false }, ticks: { color: textColor } },
+          y: { beginAtZero: true, grid: { color: gridColor }, ticks: { color: textColor, stepSize: 1 } }
+        }
+      };
+    }
+
+    this.timelineChart = new Chart(canvas, { type: chartType, data, options });
   }
 
   renderDonutChart(): void {
@@ -341,10 +627,7 @@ export class App implements OnInit, OnDestroy {
         maintainAspectRatio: false,
         cutout: '70%',
         plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { font: { family: 'Onest, Inter, sans-serif', size: 12 }, padding: 16, usePointStyle: true }
-          },
+          legend: { display: false },
           tooltip: { bodyFont: { family: 'Onest' } }
         }
       }
@@ -357,7 +640,7 @@ export class App implements OnInit, OnDestroy {
     this.leadsLoading = true;
     const { companyCode, mobile } = this.employee;
     const setParam = this.selectedLeadSet ? `&setLabel=${encodeURIComponent(this.selectedLeadSet)}` : '';
-    this.http.get<any>(`${API}/api/leads/employee?companyCode=${companyCode}&phone=${mobile}${setParam}`)
+    this.api.get<any>(`/api/leads/employee?companyCode=${companyCode}&phone=${mobile}${setParam}`)
       .subscribe({
         next: res => {
           this.leadsLoading = false;
@@ -377,7 +660,7 @@ export class App implements OnInit, OnDestroy {
 
   updateLeadStatus(lead: Lead, newStatus: string): void {
     this.updatingLeadId = lead._id;
-    this.http.patch<any>(`${API}/api/leads/${lead._id}/status`, { status: newStatus }, { headers: this.headers })
+    this.api.patch<any>(`/api/leads/${lead._id}/status`, { status: newStatus })
       .subscribe({
         next: res => {
           this.updatingLeadId = '';
@@ -403,8 +686,8 @@ export class App implements OnInit, OnDestroy {
   fetchFollowups(): void {
     if (!this.employee) return;
     this.followupsLoading = true;
-    const { companyCode, mobile } = this.employee;
-    this.http.get<any>(`${API}/api/bookmarks?companyCode=${companyCode}&phone=${mobile}`)
+    const { companyCode, phone } = { companyCode: this.employee.companyCode, phone: this.employee.mobile };
+    this.api.get<any>(`/api/bookmarks?companyCode=${companyCode}&phone=${phone}`)
       .subscribe({
         next: res => {
           this.followupsLoading = false;

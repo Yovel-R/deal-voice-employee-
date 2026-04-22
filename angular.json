@@ -27,7 +27,10 @@
             "styles": [
               "src/styles.css"
             ],
-            "polyfills": ["zone.js"]
+            "polyfills": ["zone.js"],
+            "optimization": {
+              "fonts": { "inline": false }
+            }
           },
           "configurations": {
             "production": {
