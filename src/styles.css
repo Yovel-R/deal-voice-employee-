@@ -1,0 +1,59 @@
+/* Employee UI – Global Styles (matches web-page design system) */
+@import url('https://fonts.googleapis.com/css2?family=Onest:wght@300;400;500;600;700;800&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: light;
+}
+
+:root {
+  --bg:          #ffffff;
+  --bg-card:     #ffffff;
+  --bg-card-2:   #f8fafc;
+  --border:      #e2e8f0;
+  --border-glow: rgba(61, 125, 254, 0.2);
+  --accent:      #3D7DFE;
+  --accent-2:    #2563eb;
+  --accent-dark: #1e1e1e;
+  --blue:        #3D7DFE;
+  --green:       #10b981;
+  --orange:      #f59e0b;
+  --pink:        #ef4444;
+  --red:         #ef4444;
+  --purple:      #6366f1;
+  --text-1:      #0f172a;
+  --text-2:      #475569;
+  --text-3:      #8d8d8d;
+  --text-heading:#111827;
+  --radius:      16px;
+  --font-head:   'Onest', 'Inter', sans-serif;
+  --font-body:   'Onest', 'Inter', sans-serif;
+  --shadow-sm:   0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md:   0 4px 16px rgba(0,0,0,0.08);
+  --shadow-lg:   0 10px 40px rgba(0,0,0,0.12);
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-1);
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+a { text-decoration: none; color: inherit; }
+
+/* ── Scrollbar ───────────────────────────── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
