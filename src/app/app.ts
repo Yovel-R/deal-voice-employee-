@@ -127,7 +127,9 @@ export class App implements OnInit, OnDestroy {
     this.selectedLeadCompany = name;
   }
 
-  readonly LEAD_STATUSES = ['New', 'Contacted', 'Interested', 'Not Interested', 'Converted', 'Follow Up'];
+  // Admin-configurable lead statuses (fetched from backend)
+  LEAD_STATUSES: string[] = ['New', 'Contacted', 'Interested', 'Not Interested', 'Converted', 'Follow Up'];
+  breakHourLimitMin: number = 60; // minutes — fetched from company settings
 
   get filteredLeads(): Lead[] {
     return this.leads.filter(l => {
@@ -303,6 +305,15 @@ export class App implements OnInit, OnDestroy {
   sidebarOpen = false;
   sidebarMinimized = false;
 
+  // ── Break button state ────────────────────────────────────────
+  breakActive = false;
+  breakPosting = false;
+  breakTimerDisplay = '00:00';
+  breakTotalSecondsToday = 0;
+  private breakTimerRef: any;
+  private breakStartedAt: number = 0;
+
+
   constructor(private http: HttpClient, private sse: RealtimeService, public api: ApiService) { }
 
   ngOnInit(): void {
@@ -316,6 +327,7 @@ export class App implements OnInit, OnDestroy {
         this.loggedIn = true;
         this.loadDashboard();
         this.initRealtime();
+        this.resumeBreakTimer();
       } catch { localStorage.removeItem('dv_employee'); }
     }
   }
@@ -428,6 +440,8 @@ export class App implements OnInit, OnDestroy {
     this.fetchStats();
     this.fetchLeads();
     this.fetchFollowups();
+    this.fetchCompanySettings();
+    this.fetchBreakStatus();
   }
 
   switchTab(tab: 'overview' | 'leads' | 'followups'): void {
@@ -439,6 +453,107 @@ export class App implements OnInit, OnDestroy {
         this.renderTimelineChart();
       }, 150);
     }
+  }
+
+  // ── Company Settings (lead statuses, break limit) ──
+  fetchCompanySettings(): void {
+    if (!this.employee) return;
+    this.api.get<any>(`/api/auth/company/${this.employee.companyCode}/settings`).subscribe({
+      next: res => {
+        if (res.success && res.settings) {
+          if (res.settings.leadStatuses?.length) {
+            this.LEAD_STATUSES = res.settings.leadStatuses;
+          }
+          this.breakHourLimitMin = res.settings.breakHourLimit ?? 60;
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  // ── Break Button Logic ──
+  fetchBreakStatus(): void {
+    if (!this.employee) return;
+    this.api.get<any>(`/api/breaklog/employee-today?companyCode=${this.employee.companyCode}&employeePhone=${this.employee.mobile}`).subscribe({
+      next: res => {
+        if (res.success) {
+          this.breakTotalSecondsToday = res.totalSeconds ?? 0;
+          this.breakHourLimitMin = Math.floor((res.limitSeconds ?? 3600) / 60);
+        }
+      },
+      error: () => {}
+    });
+  }
+
+  markBreak(): void {
+    if (this.breakActive) {
+      // Stop timer — compute how many seconds elapsed
+      clearInterval(this.breakTimerRef);
+      const elapsedMs = Date.now() - this.breakStartedAt;
+      const elapsedSec = Math.max(1, Math.floor(elapsedMs / 1000));
+      this.breakActive = false;
+      this.breakTimerDisplay = '00:00';
+      this.breakPosting = true;
+      localStorage.removeItem('dv_break_state');
+
+      // Post to backend
+      this.api.post<any>('/api/breaklog/mark', {
+        companyCode: this.employee!.companyCode,
+        employeePhone: this.employee!.mobile,
+        employeeName: this.employee!.name,
+        durationSeconds: elapsedSec,
+      }).subscribe({
+        next: res => {
+          this.breakPosting = false;
+          if (res.success) {
+            this.breakTotalSecondsToday = res.totalSeconds;
+          }
+        },
+        error: () => { this.breakPosting = false; }
+      });
+    } else {
+      // Start timer
+      this.breakActive = true;
+      this.breakStartedAt = Date.now();
+      localStorage.setItem('dv_break_state', JSON.stringify({ startedAt: this.breakStartedAt }));
+      this.startBreakTimerLoop();
+    }
+  }
+
+  resumeBreakTimer(): void {
+    const rawBreak = localStorage.getItem('dv_break_state');
+    if (rawBreak) {
+      try {
+        const data = JSON.parse(rawBreak);
+        if (data.startedAt) {
+          this.breakActive = true;
+          this.breakStartedAt = data.startedAt;
+          this.startBreakTimerLoop();
+        }
+      } catch { localStorage.removeItem('dv_break_state'); }
+    }
+  }
+
+  startBreakTimerLoop(): void {
+    // Initial display update
+    const sec = Math.floor((Date.now() - this.breakStartedAt) / 1000);
+    this.breakTimerDisplay = `${String(Math.floor(sec / 60)).padStart(2, '0')}:${String(sec % 60).padStart(2, '0')}`;
+    
+    this.breakTimerRef = setInterval(() => {
+      const elapsedSec = Math.floor((Date.now() - this.breakStartedAt) / 1000);
+      const m = Math.floor(elapsedSec / 60);
+      const s = elapsedSec % 60;
+      this.breakTimerDisplay = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+    }, 1000);
+  }
+
+  fmtSecs(totalSecs: number): string {
+    const h = Math.floor(totalSecs / 3600);
+    const m = Math.floor((totalSecs % 3600) / 60);
+    const s = totalSecs % 60;
+    if (h > 0) return `${h}h ${m}m`;
+    if (m > 0) return `${m}m ${s}s`;
+    return `${s}s`;
   }
 
   onPeriodChange(p: 'today' | 'yesterday' | 'lastweek'): void {
