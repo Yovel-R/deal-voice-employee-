@@ -27,6 +27,10 @@ interface Lead {
   contactNumber: string;
   status: string;
   setLabel: string;
+  companyDescription?: string;
+  mainDivisionDescription?: string;
+  directorEmailAddress?: string;
+  remarks?: string;
   createdAt?: string;
 }
 
@@ -83,7 +87,7 @@ export class App implements OnInit, OnDestroy {
   companyName = '';
 
   // ── Dashboard tabs ────────────────────────────────────────────
-  dashTab: 'overview' | 'leads' | 'followups' = 'overview';
+  dashTab: 'overview' | 'leads' | 'followups' | 'interested' = 'overview';
 
   // ── Period ────────────────────────────────────────────────────
   selectedPeriod: 'today' | 'yesterday' | 'lastweek' = 'today';
@@ -147,6 +151,23 @@ export class App implements OnInit, OnDestroy {
       if (this.leadStatusFilter && l.status !== this.leadStatusFilter) return false;
       return true;
     });
+  }
+
+  get interestedLeads(): Lead[] {
+    return this.leads.filter(l => l.status === 'Interested');
+  }
+
+  get uniqueInterestedCompanies(): string[] {
+    const sets = new Set<string>();
+    this.interestedLeads.forEach(l => {
+      if (l.leadCompanyName) sets.add(l.leadCompanyName);
+    });
+    return Array.from(sets).sort();
+  }
+
+  get interestedLeadsInSelectedCompany(): Lead[] {
+    if (!this.selectedLeadCompany) return [];
+    return this.interestedLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
   }
 
   // ── Follow-ups ────────────────────────────────────────────────
@@ -449,7 +470,7 @@ export class App implements OnInit, OnDestroy {
     this.fetchBreakStatus();
   }
 
-  switchTab(tab: 'overview' | 'leads' | 'followups'): void {
+  switchTab(tab: 'overview' | 'leads' | 'followups' | 'interested'): void {
     this.dashTab = tab;
     this.sidebarOpen = false;
     if (tab === 'overview') {

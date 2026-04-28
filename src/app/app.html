@@ -149,6 +149,15 @@
           <span>My Leads</span>
         </button>
 
+        <button class="sidebar-item" [class.active]="dashTab==='interested'" (click)="switchTab('interested')"
+          [title]="sidebarMinimized ? 'Interested' : ''">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-user">
+            <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+          </svg>
+          <span>Interested</span>
+        </button>
+
         <button class="sidebar-item" [class.active]="dashTab==='followups'" (click)="switchTab('followups')"
           [title]="sidebarMinimized ? 'Follow-ups' : ''">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -435,6 +444,25 @@
                   </svg>
                   {{ lead.setLabel }}
                 </div>
+
+                <div class="lead-meta" *ngIf="lead.directorEmailAddress">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline>
+                  </svg>
+                  {{ lead.directorEmailAddress }}
+                </div>
+
+                <div *ngIf="lead.mainDivisionDescription" style="margin-top: 8px; font-size: 0.7rem; color: #4338ca; background: #eef2ff; padding: 3px 8px; border-radius: 4px; font-weight: 600; display: inline-block;">
+                  Div: {{ lead.mainDivisionDescription }}
+                </div>
+
+                <div *ngIf="lead.companyDescription" style="margin-top: 8px; font-size: 0.72rem; color: #475569; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; border-left: 3px solid #cbd5e1;">
+                  <strong>Desc:</strong> {{ lead.companyDescription }}
+                </div>
+
+                <div *ngIf="lead.remarks" style="margin-top: 8px; font-size: 0.72rem; color: #b45309; background: #fffbeb; padding: 6px 10px; border-radius: 6px; border: 1px solid #fde68a;">
+                  <strong>Remarks:</strong> {{ lead.remarks }}
+                </div>
                 <div class="lead-actions">
                   <select class="status-select" [ngClass]="getLeadStatusClass(lead.status)" [ngModel]="lead.status" (ngModelChange)="updateLeadStatus(lead, $event)" [disabled]="updatingLeadId === lead._id">
                     <option *ngFor="let st of LEAD_STATUSES" [value]="st">{{ st }}</option>
@@ -456,6 +484,110 @@
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path></svg>
             <h3 style="margin-top: 1rem;">Select a company to view leads</h3>
             <p>Click on a company from the left list to see contact details</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ INTERESTED TAB ════════ -->
+    <div class="tab-content" *ngIf="dashTab==='interested'">
+      <div class="dash-header-row" style="margin-bottom: 1.5rem;">
+        <h2 class="dash-title">Interested Leads</h2>
+        <div class="stat-badge" style="background: #ecfdf5; color: #059669; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">
+          {{ interestedLeads.length }} TOTAL
+        </div>
+      </div>
+
+      <div class="leads-container">
+        <!-- Sidebar: Company List -->
+        <div class="leads-sidebar">
+          <div class="leads-sidebar-header">
+            <div style="font-weight: 700; color: var(--text-1); font-size: 0.95rem;">Interested Companies</div>
+            <div style="font-size: 0.75rem; color: var(--text-3); margin-top: 4px;">{{ uniqueInterestedCompanies.length }} companies</div>
+          </div>
+          <div class="leads-list">
+            <div *ngFor="let company of uniqueInterestedCompanies" class="lead-item"
+              [class.active]="selectedLeadCompany === company" (click)="selectLeadCompany(company)">
+              <div class="lead-item-name">{{ company }}</div>
+              <div class="lead-item-meta">{{ interestedLeads.filter(l => l.leadCompanyName === company).length }} contacts</div>
+            </div>
+            <div *ngIf="uniqueInterestedCompanies.length === 0" style="padding: 2rem 1rem; text-align: center; color: var(--text-3); font-size: 0.85rem;">
+              No interested leads yet.
+            </div>
+          </div>
+        </div>
+
+        <!-- Detail View: Contact Cards -->
+        <div class="lead-detail-view">
+          <div *ngIf="selectedLeadCompany && interestedLeadsInSelectedCompany.length > 0">
+            <div class="customer-detail-header">
+              <div class="cd-header-icon" style="background: #ecfdf5; color: #10b981;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+                </svg>
+              </div>
+              <h3 class="cd-header-title">{{ selectedLeadCompany }}</h3>
+            </div>
+
+            <div class="leads-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
+              <div *ngFor="let lead of interestedLeadsInSelectedCompany" class="lead-card">
+                <div class="lead-card-top">
+                  <div class="lead-company">{{ lead.contactName || 'Primary Contact' }}</div>
+                  <span class="status-badge status-interested">Interested</span>
+                </div>
+                <div class="lead-phone">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.29 18a19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-7.71A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91A16 16 0 0 0 14 15.82l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  {{ lead.contactNumber }}
+                </div>
+                
+                <div class="lead-meta" *ngIf="lead.setLabel">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>
+                  </svg>
+                  {{ lead.setLabel }}
+                </div>
+
+                <div class="lead-meta" *ngIf="lead.directorEmailAddress">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline>
+                  </svg>
+                  {{ lead.directorEmailAddress }}
+                </div>
+
+                <div *ngIf="lead.mainDivisionDescription" style="margin-top: 8px; font-size: 0.7rem; color: #4338ca; background: #eef2ff; padding: 3px 8px; border-radius: 4px; font-weight: 600; display: inline-block;">
+                  Div: {{ lead.mainDivisionDescription }}
+                </div>
+
+                <div *ngIf="lead.companyDescription" style="margin-top: 8px; font-size: 0.72rem; color: #475569; background: #f1f5f9; padding: 6px 10px; border-radius: 6px; border-left: 3px solid #cbd5e1;">
+                  <strong>Desc:</strong> {{ lead.companyDescription }}
+                </div>
+
+                <div *ngIf="lead.remarks" style="margin-top: 8px; font-size: 0.72rem; color: #b45309; background: #fffbeb; padding: 6px 10px; border-radius: 6px; border: 1px solid #fde68a;">
+                  <strong>Remarks:</strong> {{ lead.remarks }}
+                </div>
+
+                <div class="lead-actions">
+                  <select class="status-select" [ngClass]="getLeadStatusClass(lead.status)" [ngModel]="lead.status" (ngModelChange)="updateLeadStatus(lead, $event)" [disabled]="updatingLeadId === lead._id">
+                    <option *ngFor="let st of LEAD_STATUSES" [value]="st">{{ st }}</option>
+                  </select>
+                  <button class="btn-followup-icon" (click)="openFollowupModal(lead)" title="Add Follow-up">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!selectedLeadCompany || interestedLeadsInSelectedCompany.length === 0" class="leads-empty-state">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1.5">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>
+            </svg>
+            <h3 style="margin-top: 1rem;">Select an interested company</h3>
+            <p>Click on a company from the left to see interested contacts</p>
           </div>
         </div>
       </div>
