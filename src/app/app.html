@@ -460,8 +460,31 @@
                   <strong>Desc:</strong> {{ lead.companyDescription }}
                 </div>
 
-                <div *ngIf="lead.remarks" style="margin-top: 8px; font-size: 0.72rem; color: #b45309; background: #fffbeb; padding: 6px 10px; border-radius: 6px; border: 1px solid #fde68a;">
-                  <strong>Remarks:</strong> {{ lead.remarks }}
+                <div class="lead-remarks-container" style="margin-top: 12px; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
+                  <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    REMARKS
+                  </div>
+                  <div *ngIf="!lead.remarks || lead.remarks.length === 0" style="font-size: 0.65rem; color: #94a3b8; font-style: italic; margin-bottom: 6px;">No remarks added.</div>
+                  <div *ngFor="let r of lead.remarks" style="font-size: 0.72rem; color: #475569; background: #f8fafc; padding: 6px 10px; border-radius: 6px; margin-bottom: 5px; border-left: 2.5px solid #cbd5e1; line-height: 1.4;">
+                    {{ r }}
+                  </div>
+                  <div style="display: flex; gap: 4px; margin-top: 8px;">
+                    <input type="text" [(ngModel)]="leadRemarksInputs[lead._id]" placeholder="Type remark..." 
+                      style="flex: 1; font-size: 0.75rem; padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; transition: border-color 0.2s;"
+                      onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#e2e8f0'"
+                      (keyup.enter)="addLeadRemark(lead)">
+                    <button (click)="addLeadRemark(lead)" [disabled]="remarkPostingIds.has(lead._id)"
+                      style="background: #4f46e5; color: #fff; border: none; border-radius: 6px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.1s; position: relative;"
+                      [style.opacity]="remarkPostingIds.has(lead._id) ? '0.7' : '1'"
+                      onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">
+                      <svg *ngIf="!remarkPostingIds.has(lead._id)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      <!-- Spinner -->
+                      <svg *ngIf="remarkPostingIds.has(lead._id)" width="16" height="16" viewBox="0 0 50 50" style="animation: rotate 2s linear infinite;">
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="90, 150" stroke-dashoffset="0" stroke-linecap="round"></circle>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
                 <div class="lead-actions">
                   <select class="status-select" [ngClass]="getLeadStatusClass(lead.status)" [ngModel]="lead.status" (ngModelChange)="updateLeadStatus(lead, $event)" [disabled]="updatingLeadId === lead._id">
@@ -564,8 +587,31 @@
                   <strong>Desc:</strong> {{ lead.companyDescription }}
                 </div>
 
-                <div *ngIf="lead.remarks" style="margin-top: 8px; font-size: 0.72rem; color: #b45309; background: #fffbeb; padding: 6px 10px; border-radius: 6px; border: 1px solid #fde68a;">
-                  <strong>Remarks:</strong> {{ lead.remarks }}
+                <div class="lead-remarks-container" style="margin-top: 12px; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
+                  <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    REMARKS
+                  </div>
+                  <div *ngIf="!lead.remarks || lead.remarks.length === 0" style="font-size: 0.65rem; color: #94a3b8; font-style: italic; margin-bottom: 6px;">No remarks added.</div>
+                  <div *ngFor="let r of lead.remarks" style="font-size: 0.72rem; color: #475569; background: #f8fafc; padding: 6px 10px; border-radius: 6px; margin-bottom: 5px; border-left: 2.5px solid #cbd5e1; line-height: 1.4;">
+                    {{ r }}
+                  </div>
+                  <div style="display: flex; gap: 4px; margin-top: 8px;">
+                    <input type="text" [(ngModel)]="leadRemarksInputs[lead._id]" placeholder="Type remark..." 
+                      style="flex: 1; font-size: 0.75rem; padding: 6px 10px; border: 1px solid #e2e8f0; border-radius: 6px; outline: none; transition: border-color 0.2s;"
+                      onfocus="this.style.borderColor='#4f46e5'" onblur="this.style.borderColor='#e2e8f0'"
+                      (keyup.enter)="addLeadRemark(lead)">
+                    <button (click)="addLeadRemark(lead)" [disabled]="remarkPostingIds.has(lead._id)"
+                      style="background: #4f46e5; color: #fff; border: none; border-radius: 6px; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.1s; position: relative;"
+                      [style.opacity]="remarkPostingIds.has(lead._id) ? '0.7' : '1'"
+                      onmousedown="this.style.transform='scale(0.95)'" onmouseup="this.style.transform='scale(1)'">
+                      <svg *ngIf="!remarkPostingIds.has(lead._id)" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                      <!-- Spinner -->
+                      <svg *ngIf="remarkPostingIds.has(lead._id)" width="16" height="16" viewBox="0 0 50 50" style="animation: rotate 2s linear infinite;">
+                        <circle cx="25" cy="25" r="20" fill="none" stroke="#fff" stroke-width="5" stroke-dasharray="90, 150" stroke-dashoffset="0" stroke-linecap="round"></circle>
+                      </svg>
+                    </button>
+                  </div>
                 </div>
 
                 <div class="lead-actions">

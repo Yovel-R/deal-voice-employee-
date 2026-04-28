@@ -30,7 +30,7 @@ interface Lead {
   companyDescription?: string;
   mainDivisionDescription?: string;
   directorEmailAddress?: string;
-  remarks?: string;
+  remarks?: string[];
   createdAt?: string;
 }
 
@@ -105,6 +105,32 @@ export class App implements OnInit, OnDestroy {
   leadSets: string[] = [];
   selectedLeadSet = '';
   leadsLoading = false;
+  leadRemarksInputs: { [key: string]: string } = {};
+  remarkPostingIds = new Set<string>();
+
+  addLeadRemark(lead: Lead): void {
+    const remark = this.leadRemarksInputs[lead._id];
+    if (!remark || !remark.trim() || this.remarkPostingIds.has(lead._id)) return;
+
+    this.remarkPostingIds.add(lead._id);
+
+    this.api.post(`/api/leads/${lead._id}/remarks`, { remark }).subscribe({
+      next: (res: any) => {
+        this.remarkPostingIds.delete(lead._id);
+        if (res.success) {
+          this.leadRemarksInputs[lead._id] = '';
+          // Immediate reflection
+          const idx = this.leads.findIndex(l => l._id === lead._id);
+          if (idx !== -1) {
+            this.leads[idx] = this.normalizeLead(res.lead);
+          }
+        }
+      },
+      error: () => {
+        this.remarkPostingIds.delete(lead._id);
+      }
+    });
+  }
   leadSearch = '';
   leadStatusFilter = '';
   updatingLeadId = '';
@@ -435,19 +461,28 @@ export class App implements OnInit, OnDestroy {
     });
   }
 
+  normalizeLead(lead: any): Lead {
+    if (!lead) return lead;
+    return {
+      ...lead,
+      remarks: Array.isArray(lead.remarks) ? lead.remarks : (lead.remarks ? [lead.remarks] : [])
+    };
+  }
+
   handleRealtimeEvent(ev: SSEEvent): void {
     if (ev.type === 'LEADS_REFRESH' || ev.type === 'LEADS_BULK_CREATED' || ev.type === 'LEAD_SET_DELETED') {
       this.fetchLeads(); // bulk change, just refresh
     } else if (ev.type === 'LEAD_CREATED' && ev.lead) {
       if (!this.leads.find(l => l._id === ev.lead._id)) {
-        this.leads.unshift(ev.lead);
-        if (ev.lead.setLabel && !this.leadSets.includes(ev.lead.setLabel)) {
-          this.leadSets.push(ev.lead.setLabel);
+        const normalized = this.normalizeLead(ev.lead);
+        this.leads.unshift(normalized);
+        if (normalized.setLabel && !this.leadSets.includes(normalized.setLabel)) {
+          this.leadSets.push(normalized.setLabel);
         }
       }
     } else if (ev.type === 'LEAD_UPDATED' && ev.lead) {
       const idx = this.leads.findIndex(l => l._id === ev.lead._id);
-      if (idx !== -1) this.leads[idx] = ev.lead;
+      if (idx !== -1) this.leads[idx] = this.normalizeLead(ev.lead);
     } else if (ev.type === 'LEAD_DELETED' && ev.id) {
       this.leads = this.leads.filter(l => l._id !== ev.id);
     } else if (ev.type === 'BOOKMARK_CREATED' && ev.bookmark) {
@@ -786,7 +821,7 @@ export class App implements OnInit, OnDestroy {
         next: res => {
           this.leadsLoading = false;
           if (res.success) {
-            this.leads = res.leads || [];
+            this.leads = (res.leads || []).map((l: any) => this.normalizeLead(l));
             this.leadSets = res.sets || [];
           }
         },
