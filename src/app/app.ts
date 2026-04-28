@@ -87,7 +87,7 @@ export class App implements OnInit, OnDestroy {
   companyName = '';
 
   // ── Dashboard tabs ────────────────────────────────────────────
-  dashTab: 'overview' | 'leads' | 'followups' | 'interested' = 'overview';
+  dashTab: 'overview' | 'leads' | 'followups' | 'interested' | 'dnp' = 'overview';
 
   // ── Period ────────────────────────────────────────────────────
   selectedPeriod: 'today' | 'yesterday' | 'lastweek' = 'today';
@@ -101,9 +101,10 @@ export class App implements OnInit, OnDestroy {
   chartType: 'line' | 'bar' = 'line';
 
   // ── Leads ─────────────────────────────────────────────────────
+  allLeads: Lead[] = [];
   leads: Lead[] = [];
   leadSets: string[] = [];
-  selectedLeadSet = '';
+  selectedLeadSet = 'none';
   leadsLoading = false;
   leadRemarksInputs: { [key: string]: string } = {};
   remarkPostingIds = new Set<string>();
@@ -128,6 +129,20 @@ export class App implements OnInit, OnDestroy {
       },
       error: () => {
         this.remarkPostingIds.delete(lead._id);
+      }
+    });
+  }
+
+  deleteLeadRemark(lead: Lead, index: number): void {
+    if (!confirm('Delete this remark?')) return;
+    this.api.delete(`/api/leads/${lead._id}/remarks/${index}`).subscribe({
+      next: (res: any) => {
+        if (res.success) {
+          const idx = this.leads.findIndex(l => l._id === lead._id);
+          if (idx !== -1) {
+            this.leads[idx] = this.normalizeLead(res.lead);
+          }
+        }
       }
     });
   }
@@ -164,23 +179,58 @@ export class App implements OnInit, OnDestroy {
 
   // Admin-configurable lead statuses (fetched from backend)
   LEAD_STATUSES: string[] = ['New', 'Contacted', 'Interested', 'Not Interested', 'Converted', 'Follow Up'];
+  INTERESTED_PAGE_STATUSES: string[] = ['Interested', 'Follow Up'];
+  DNP_PAGE_STATUSES: string[] = ['Not Interested'];
+  selectedInterestedStatus: string = 'All';
+  selectedDnpStatus: string = 'All';
   breakHourLimitMin: number = 60; // minutes — fetched from company settings
 
   get filteredLeads(): Lead[] {
-    return this.leads.filter(l => {
+    if (this.selectedLeadSet === 'none') return [];
+    
+    return this.allLeads.filter(l => {
+      // Set Filter
+      if (this.selectedLeadSet && l.setLabel !== this.selectedLeadSet) return false;
+
+      // Search Filter
       if (this.leadSearch) {
         const q = this.leadSearch.toLowerCase();
         if (!(l.leadCompanyName.toLowerCase().includes(q) ||
               l.contactName?.toLowerCase().includes(q) ||
               l.contactNumber?.toLowerCase().includes(q))) return false;
       }
+      
+      // Status Filter
       if (this.leadStatusFilter && l.status !== this.leadStatusFilter) return false;
+      
       return true;
     });
   }
 
   get interestedLeads(): Lead[] {
-    return this.leads.filter(l => l.status === 'Interested');
+    let filtered = this.allLeads.filter(l => this.INTERESTED_PAGE_STATUSES.includes(l.status));
+    if (this.selectedInterestedStatus !== 'All') {
+      filtered = filtered.filter(l => l.status === this.selectedInterestedStatus);
+    }
+    return filtered;
+  }
+
+  get dnpLeads(): Lead[] {
+    let filtered = this.allLeads.filter(l => this.DNP_PAGE_STATUSES.includes(l.status));
+    if (this.selectedDnpStatus !== 'All') {
+      filtered = filtered.filter(l => l.status === this.selectedDnpStatus);
+    }
+    return filtered;
+  }
+
+  get interestedLeadsInSelectedCompany(): Lead[] {
+    if (!this.selectedLeadCompany) return [];
+    return this.interestedLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
+  }
+
+  get dnpLeadsInSelectedCompany(): Lead[] {
+    if (!this.selectedLeadCompany) return [];
+    return this.dnpLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
   }
 
   get uniqueInterestedCompanies(): string[] {
@@ -191,9 +241,12 @@ export class App implements OnInit, OnDestroy {
     return Array.from(sets).sort();
   }
 
-  get interestedLeadsInSelectedCompany(): Lead[] {
-    if (!this.selectedLeadCompany) return [];
-    return this.interestedLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
+  get uniqueDnpCompanies(): string[] {
+    const sets = new Set<string>();
+    this.dnpLeads.forEach(l => {
+      if (l.leadCompanyName) sets.add(l.leadCompanyName);
+    });
+    return Array.from(sets).sort();
   }
 
   // ── Follow-ups ────────────────────────────────────────────────
@@ -500,12 +553,13 @@ export class App implements OnInit, OnDestroy {
   loadDashboard(): void {
     this.fetchStats();
     this.fetchLeads();
+    this.fetchLeadSets();
     this.fetchFollowups();
     this.fetchCompanySettings();
     this.fetchBreakStatus();
   }
 
-  switchTab(tab: 'overview' | 'leads' | 'followups' | 'interested'): void {
+  switchTab(tab: 'overview' | 'leads' | 'followups' | 'interested' | 'dnp'): void {
     this.dashTab = tab;
     this.sidebarOpen = false;
     if (tab === 'overview') {
@@ -525,6 +579,8 @@ export class App implements OnInit, OnDestroy {
           if (res.settings.leadStatuses?.length) {
             this.LEAD_STATUSES = res.settings.leadStatuses;
           }
+          this.INTERESTED_PAGE_STATUSES = res.settings.interestedPageStatuses ?? ['Interested', 'Follow Up'];
+          this.DNP_PAGE_STATUSES = res.settings.dnpPageStatuses ?? ['Not Interested'];
           this.breakHourLimitMin = res.settings.breakHourLimit ?? 60;
         }
       },
@@ -691,7 +747,16 @@ export class App implements OnInit, OnDestroy {
 
       const isHourly = filtered.length > 0 && filtered[0]._isHourly;
       const labels = filtered.map(d => {
-        const dt = new Date(d.date);
+        let dt: Date;
+        if (d.date.includes('T')) {
+          // It's hourly data from backend, which is in UTC.
+          // Appending 'Z' ensures the browser converts it to the user's local time correctly.
+          dt = new Date(d.date + 'Z');
+        } else {
+          // It's daily data: 2026-04-28. Use local parsing.
+          dt = new Date(d.date.replace(/-/g, '/'));
+        }
+
         if (isHourly) {
           const h = dt.getHours();
           const ampm = h >= 12 ? 'PM' : 'AM';
@@ -815,13 +880,13 @@ export class App implements OnInit, OnDestroy {
     if (!this.employee) return;
     this.leadsLoading = true;
     const { companyCode, mobile } = this.employee;
-    const setParam = this.selectedLeadSet ? `&setLabel=${encodeURIComponent(this.selectedLeadSet)}` : '';
-    this.api.get<any>(`/api/leads/employee?companyCode=${companyCode}&phone=${mobile}${setParam}`)
+    // We always fetch ALL leads to ensure Interested/Not Connected pages have full data
+    this.api.get<any>(`/api/leads/employee?companyCode=${companyCode}&phone=${mobile}`)
       .subscribe({
         next: res => {
           this.leadsLoading = false;
           if (res.success) {
-            this.leads = (res.leads || []).map((l: any) => this.normalizeLead(l));
+            this.allLeads = (res.leads || []).map((l: any) => this.normalizeLead(l));
             this.leadSets = res.sets || [];
           }
         },
@@ -829,9 +894,21 @@ export class App implements OnInit, OnDestroy {
       });
   }
 
+  fetchLeadSets(): void {
+    if (!this.employee) return;
+    this.api.get<any>(`/api/leads/employee/sets?companyCode=${this.employee.companyCode}&phone=${this.employee.mobile}`).subscribe({
+      next: res => {
+        if (res.success) {
+          this.leadSets = res.sets || [];
+        }
+      },
+      error: () => {}
+    });
+  }
+
   onLeadSetChange(set: string): void {
     this.selectedLeadSet = set;
-    this.fetchLeads();
+    // No need to re-fetch, local getter filteredLeads handles it
   }
 
   updateLeadStatus(lead: Lead, newStatus: string): void {
