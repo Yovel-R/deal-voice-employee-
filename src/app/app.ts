@@ -108,19 +108,24 @@ export class App implements OnInit, OnDestroy {
 
   get uniqueLeadCompanies(): string[] {
     const sets = new Set<string>();
-    this.leads.forEach(l => {
+    this.filteredLeads.forEach(l => {
       if (l.leadCompanyName) sets.add(l.leadCompanyName);
     });
     const arr = Array.from(sets).sort();
-    if (arr.length > 0 && !this.selectedLeadCompany) {
+    
+    // If current selection is not in the filtered list, reset it to the first available company
+    if (this.selectedLeadCompany && !sets.has(this.selectedLeadCompany)) {
+      this.selectedLeadCompany = arr.length > 0 ? arr[0] : '';
+    } else if (arr.length > 0 && !this.selectedLeadCompany) {
       this.selectedLeadCompany = arr[0];
     }
+    
     return arr;
   }
 
   get leadsInSelectedCompany(): Lead[] {
     if (!this.selectedLeadCompany) return [];
-    return this.leads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
+    return this.filteredLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
   }
 
   selectLeadCompany(name: string): void {

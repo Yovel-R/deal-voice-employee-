@@ -51,13 +51,12 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 28px;
+  margin-bottom: 32px;
 }
-.brand-logo {
-  width: 40px; height: 40px;
-  background: linear-gradient(135deg, #e0eaff 0%, #f0f4ff 100%);
-  border-radius: 10px;
-  display: flex; align-items: center; justify-content: center;
+.brand-logo img {
+  width: 180px;
+  height: auto;
+  display: block;
 }
 .brand-name {
   font-size: 1.1rem;

@@ -399,7 +399,7 @@
             <div *ngFor="let company of uniqueLeadCompanies" class="lead-item"
               [class.active]="selectedLeadCompany === company" (click)="selectLeadCompany(company)">
               <div class="lead-item-name">{{ company }}</div>
-              <div class="lead-item-meta">{{ leads.filter(l => l.leadCompanyName === company).length }} contacts</div>
+              <div class="lead-item-meta">{{ filteredLeads.filter(l => l.leadCompanyName === company).length }} contacts</div>
             </div>
           </div>
         </div>
