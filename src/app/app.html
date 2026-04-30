@@ -454,7 +454,7 @@
             <div *ngFor="let company of uniqueLeadCompanies" class="lead-item"
               [class.active]="selectedLeadCompany === company" (click)="selectLeadCompany(company)">
               <div class="lead-item-name">{{ company }}</div>
-              <div class="lead-item-meta">{{ filteredLeads.filter(l => l.leadCompanyName === company).length }} contacts</div>
+              <div class="lead-item-meta">{{ leadsInCompanyCount(company) }} contacts</div>
             </div>
           </div>
         </div>
@@ -600,7 +600,7 @@
             <div *ngFor="let company of uniqueInterestedCompanies" class="lead-item"
               [class.active]="selectedLeadCompany === company" (click)="selectLeadCompany(company)">
               <div class="lead-item-name">{{ company }}</div>
-              <div class="lead-item-meta">{{ interestedLeads.filter(l => l.leadCompanyName === company).length }} contacts</div>
+              <div class="lead-item-meta">{{ leadsInCompanyCount(company) }} contacts</div>
             </div>
             <div *ngIf="uniqueInterestedCompanies.length === 0" style="padding: 2rem 1rem; text-align: center; color: var(--text-3); font-size: 0.85rem;">
               No interested leads yet.
@@ -610,7 +610,7 @@
 
         <!-- Detail View: Contact Cards -->
         <div class="lead-detail-view">
-          <div *ngIf="selectedLeadCompany && interestedLeadsInSelectedCompany.length > 0">
+          <div *ngIf="selectedLeadCompany && leadsInSelectedCompany.length > 0">
             <div class="customer-detail-header">
               <div class="cd-header-icon" style="background: #ecfdf5; color: #10b981;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -621,7 +621,7 @@
             </div>
 
             <div class="leads-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
-              <div *ngFor="let lead of interestedLeadsInSelectedCompany" class="lead-card">
+              <div *ngFor="let lead of leadsInSelectedCompany" class="lead-card">
                 <div class="lead-card-top">
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <div class="lead-company" style="margin-bottom: 0;">{{ lead.contactName || 'Primary Contact' }}</div>
@@ -740,7 +740,7 @@
             <div *ngFor="let company of uniqueDnpCompanies" class="lead-item"
               [class.active]="selectedLeadCompany === company" (click)="selectLeadCompany(company)">
               <div class="lead-item-name">{{ company }}</div>
-              <div class="lead-item-meta">{{ dnpLeads.filter(l => l.leadCompanyName === company).length }} contacts</div>
+              <div class="lead-item-meta">{{ leadsInCompanyCount(company) }} contacts</div>
             </div>
             <div *ngIf="uniqueDnpCompanies.length === 0" style="padding: 2rem 1rem; text-align: center; color: var(--text-3); font-size: 0.85rem;">
               No "Not Connected" leads yet.
@@ -750,7 +750,7 @@
 
         <!-- Detail View: Contact Cards -->
         <div class="lead-detail-view">
-          <div *ngIf="selectedLeadCompany && dnpLeadsInSelectedCompany.length > 0">
+          <div *ngIf="selectedLeadCompany && leadsInSelectedCompany.length > 0">
             <div class="customer-detail-header">
               <div class="cd-header-icon" style="background: #fee2e2; color: #ef4444;">
                 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -761,7 +761,7 @@
             </div>
 
             <div class="leads-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
-              <div *ngFor="let lead of dnpLeadsInSelectedCompany" class="lead-card">
+              <div *ngFor="let lead of leadsInSelectedCompany" class="lead-card">
                 <div class="lead-card-top">
                   <div style="display: flex; align-items: center; gap: 8px;">
                     <div class="lead-company" style="margin-bottom: 0;">{{ lead.contactName || 'Primary Contact' }}</div>
@@ -881,7 +881,7 @@
             <div class="lead-item" *ngFor="let company of uniqueConvertedCompanies" 
               [class.active]="selectedLeadCompany === company" (click)="selectLeadCompany(company)">
               <div class="lead-item-name">{{ company }}</div>
-              <div class="lead-item-meta">{{ convertedLeads.filter(l => l.leadCompanyName === company).length }} contacts</div>
+              <div class="lead-item-meta">{{ leadsInCompanyCount(company) }} contacts</div>
             </div>
             <div *ngIf="uniqueConvertedCompanies.length === 0" style="padding: 2rem 1rem; text-align: center; color: var(--text-3); font-size: 0.85rem;">
               No converted clients yet.
@@ -892,7 +892,7 @@
         <!-- Main Content: Lead Details -->
         <div class="leads-content">
           <div class="leads-grid" *ngIf="selectedLeadCompany">
-            <div class="lead-card" *ngFor="let lead of convertedLeadsInSelectedCompany">
+            <div class="lead-card" *ngFor="let lead of leadsInSelectedCompany">
               <div class="lead-card-body">
                 <div class="lead-name-row">
                   <div style="display: flex; align-items: center; gap: 8px;">
@@ -993,7 +993,7 @@
             <div class="lead-item" *ngFor="let company of uniqueHeartedCompanies" 
               [class.active]="selectedLeadCompany === company" (click)="selectLeadCompany(company)">
               <div class="lead-item-name">{{ company }}</div>
-              <div class="lead-item-meta">{{ heartedLeads.filter(l => l.leadCompanyName === company).length }} contacts</div>
+              <div class="lead-item-meta">{{ leadsInCompanyCount(company) }} contacts</div>
             </div>
             <div *ngIf="uniqueHeartedCompanies.length === 0" style="padding: 2rem 1rem; text-align: center; color: var(--text-3); font-size: 0.85rem;">
               No hearted clients yet.
@@ -1004,7 +1004,7 @@
         <!-- Main Content: Lead Details -->
         <div class="leads-content">
           <div class="leads-grid" *ngIf="selectedLeadCompany">
-            <div class="lead-card" *ngFor="let lead of heartedLeadsInSelectedCompany">
+            <div class="lead-card" *ngFor="let lead of leadsInSelectedCompany">
               <div class="lead-card-body">
                 <div class="lead-name-row">
                   <div style="display: flex; align-items: center; gap: 8px;">
