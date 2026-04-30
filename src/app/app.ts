@@ -31,6 +31,8 @@ interface Lead {
   mainDivisionDescription?: string;
   directorEmailAddress?: string;
   remarks?: string[];
+  isStarred?: boolean;
+  isHearted?: boolean;
   createdAt?: string;
 }
 
@@ -87,7 +89,7 @@ export class App implements OnInit, OnDestroy {
   companyName = '';
 
   // ── Dashboard tabs ────────────────────────────────────────────
-  dashTab: 'overview' | 'leads' | 'followups' | 'interested' | 'dnp' | 'converted' = 'overview';
+  dashTab: 'overview' | 'leads' | 'followups' | 'interested' | 'dnp' | 'converted' | 'hearted' = 'overview';
 
   // ── Period ────────────────────────────────────────────────────
   selectedPeriod: 'today' | 'yesterday' | 'lastweek' = 'today';
@@ -146,6 +148,23 @@ export class App implements OnInit, OnDestroy {
       }
     });
   }
+
+  toggleStar(lead: Lead): void {
+    const newValue = !lead.isStarred;
+    lead.isStarred = newValue;
+    this.api.patch(`/api/leads/${lead._id}/flags`, { isStarred: newValue }).subscribe({
+      error: () => { lead.isStarred = !newValue; }
+    });
+  }
+
+  toggleHeart(lead: Lead): void {
+    const newValue = !lead.isHearted;
+    lead.isHearted = newValue;
+    this.api.patch(`/api/leads/${lead._id}/flags`, { isHearted: newValue }).subscribe({
+      error: () => { lead.isHearted = !newValue; }
+    });
+  }
+
   leadSearch = '';
   leadStatusFilter = '';
   updatingLeadId = '';
@@ -244,15 +263,23 @@ export class App implements OnInit, OnDestroy {
   }
 
   get interestedLeadsInSelectedCompany(): Lead[] {
-    return this.interestedLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
+    return this.allLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
   }
 
   get dnpLeadsInSelectedCompany(): Lead[] {
-    return this.dnpLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
+    return this.allLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
   }
 
   get convertedLeadsInSelectedCompany(): Lead[] {
-    return this.convertedLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
+    return this.allLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
+  }
+
+  get heartedLeads(): Lead[] {
+    return this.allLeads.filter(l => l.isHearted);
+  }
+
+  get heartedLeadsInSelectedCompany(): Lead[] {
+    return this.allLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
   }
 
   get uniqueInterestedCompanies(): string[] {
@@ -274,6 +301,14 @@ export class App implements OnInit, OnDestroy {
   get uniqueConvertedCompanies(): string[] {
     const sets = new Set<string>();
     this.convertedLeads.forEach(l => {
+      if (l.leadCompanyName) sets.add(l.leadCompanyName);
+    });
+    return Array.from(sets).sort();
+  }
+
+  get uniqueHeartedCompanies(): string[] {
+    const sets = new Set<string>();
+    this.heartedLeads.forEach(l => {
       if (l.leadCompanyName) sets.add(l.leadCompanyName);
     });
     return Array.from(sets).sort();
@@ -602,7 +637,7 @@ export class App implements OnInit, OnDestroy {
     this.fetchBreakStatus();
   }
 
-  switchTab(tab: 'overview' | 'leads' | 'followups' | 'interested' | 'dnp' | 'converted'): void {
+  switchTab(tab: 'overview' | 'leads' | 'followups' | 'interested' | 'dnp' | 'converted' | 'hearted'): void {
     this.dashTab = tab;
     this.selectedLeadCompany = '';
     if (tab === 'overview') {
