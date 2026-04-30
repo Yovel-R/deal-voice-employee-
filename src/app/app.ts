@@ -87,7 +87,7 @@ export class App implements OnInit, OnDestroy {
   companyName = '';
 
   // ── Dashboard tabs ────────────────────────────────────────────
-  dashTab: 'overview' | 'leads' | 'followups' | 'interested' | 'dnp' = 'overview';
+  dashTab: 'overview' | 'leads' | 'followups' | 'interested' | 'dnp' | 'converted' = 'overview';
 
   // ── Period ────────────────────────────────────────────────────
   selectedPeriod: 'today' | 'yesterday' | 'lastweek' = 'today';
@@ -181,9 +181,21 @@ export class App implements OnInit, OnDestroy {
   LEAD_STATUSES: string[] = ['New', 'Contacted', 'Interested', 'Not Interested', 'Converted', 'Follow Up'];
   INTERESTED_PAGE_STATUSES: string[] = ['Interested', 'Follow Up'];
   DNP_PAGE_STATUSES: string[] = ['Not Interested'];
+  CONVERTED_PAGE_STATUSES: string[] = ['Converted'];
   selectedInterestedStatus: string = 'All';
   selectedDnpStatus: string = 'All';
+  selectedConvertedStatus: string = 'All';
   breakHourLimitMin: number = 60; // minutes — fetched from company settings
+
+  get todayFollowupsCount(): number {
+    if (!this.followups.length) return 0;
+    const today = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD in local time
+    return this.followups.filter(f => {
+      if (!f.reminderDate) return false;
+      const d = new Date(f.reminderDate).toLocaleDateString('en-CA');
+      return d === today;
+    }).length;
+  }
 
   get filteredLeads(): Lead[] {
     if (this.selectedLeadSet === 'none') return [];
@@ -223,14 +235,24 @@ export class App implements OnInit, OnDestroy {
     return filtered;
   }
 
+  get convertedLeads(): Lead[] {
+    let filtered = this.allLeads.filter(l => this.CONVERTED_PAGE_STATUSES.includes(l.status));
+    if (this.selectedConvertedStatus !== 'All') {
+      filtered = filtered.filter(l => l.status === this.selectedConvertedStatus);
+    }
+    return filtered;
+  }
+
   get interestedLeadsInSelectedCompany(): Lead[] {
-    if (!this.selectedLeadCompany) return [];
     return this.interestedLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
   }
 
   get dnpLeadsInSelectedCompany(): Lead[] {
-    if (!this.selectedLeadCompany) return [];
     return this.dnpLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
+  }
+
+  get convertedLeadsInSelectedCompany(): Lead[] {
+    return this.convertedLeads.filter(l => l.leadCompanyName === this.selectedLeadCompany);
   }
 
   get uniqueInterestedCompanies(): string[] {
@@ -249,19 +271,40 @@ export class App implements OnInit, OnDestroy {
     return Array.from(sets).sort();
   }
 
+  get uniqueConvertedCompanies(): string[] {
+    const sets = new Set<string>();
+    this.convertedLeads.forEach(l => {
+      if (l.leadCompanyName) sets.add(l.leadCompanyName);
+    });
+    return Array.from(sets).sort();
+  }
+
   // ── Follow-ups ────────────────────────────────────────────────
   followups: Bookmark[] = [];
   followupsLoading = false;
   followupSearch = '';
+  followupFilter: 'all' | 'today' = 'all';
 
   get filteredFollowups(): Bookmark[] {
-    if (!this.followupSearch) return this.followups;
-    const q = this.followupSearch.toLowerCase();
-    return this.followups.filter(b =>
-      b.contactName?.toLowerCase().includes(q) ||
-      b.contactNumber?.toLowerCase().includes(q) ||
-      b.companyName?.toLowerCase().includes(q)
-    );
+    let list = this.followups;
+
+    if (this.followupFilter === 'today') {
+      const today = new Date().toLocaleDateString('en-CA');
+      list = list.filter(b => {
+        if (!b.reminderDate) return false;
+        return new Date(b.reminderDate).toLocaleDateString('en-CA') === today;
+      });
+    }
+
+    if (this.followupSearch) {
+      const q = this.followupSearch.toLowerCase();
+      list = list.filter(b =>
+        b.contactName?.toLowerCase().includes(q) ||
+        b.contactNumber?.toLowerCase().includes(q) ||
+        b.companyName?.toLowerCase().includes(q)
+      );
+    }
+    return list;
   }
 
   // ── Follow-up Modal State ─────────────────────────────────────
@@ -559,10 +602,12 @@ export class App implements OnInit, OnDestroy {
     this.fetchBreakStatus();
   }
 
-  switchTab(tab: 'overview' | 'leads' | 'followups' | 'interested' | 'dnp'): void {
+  switchTab(tab: 'overview' | 'leads' | 'followups' | 'interested' | 'dnp' | 'converted'): void {
     this.dashTab = tab;
-    this.sidebarOpen = false;
+    this.selectedLeadCompany = '';
     if (tab === 'overview') {
+      this.fetchStats();
+      this.fetchTimeline();
       setTimeout(() => {
         this.renderDonutChart();
         this.renderTimelineChart();
@@ -971,7 +1016,7 @@ export class App implements OnInit, OnDestroy {
     return this.employee.name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2);
   }
 
-  get totalLeads(): number { return this.leads.length; }
-  get convertedLeads(): number { return this.leads.filter(l => l.status === 'Converted').length; }
-  get pendingLeads(): number { return this.leads.filter(l => l.status === 'New' || l.status === 'Contacted').length; }
+  get totalLeadsCount(): number { return this.leads.length; }
+  get convertedLeadsCount(): number { return this.leads.filter(l => l.status === 'Converted').length; }
+  get pendingLeadsCount(): number { return this.leads.filter(l => l.status === 'New' || l.status === 'Contacted').length; }
 }

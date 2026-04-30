@@ -88,6 +88,20 @@
           {{ employee.name }} &middot; {{ employee.companyCode }}
         </span>
 
+        <!-- Follow-up Notification -->
+        <div class="nav-notification" (click)="dashTab='followups'; followupFilter='today'" title="Today's Follow-ups" 
+          style="position: relative; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 12px; background: white; color: #475569; transition: all 0.2s; margin: 0 8px;"
+          onmouseover="this.style.borderColor='#4f46e5'; this.style.color='#4f46e5'; this.style.background='rgba(79, 70, 229, 0.04)'"
+          onmouseout="this.style.borderColor='#e2e8f0'; this.style.color='#475569'; this.style.background='white'">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg>
+          <span *ngIf="todayFollowupsCount > 0" 
+            style="position: absolute; top: -2px; right: -2px; background: #ef4444; color: white; font-size: 0.65rem; font-weight: 800; min-width: 18px; height: 18px; border-radius: 9px; display: flex; align-items: center; justify-content: center; border: 2.5px solid white;">
+            {{ todayFollowupsCount }}
+          </span>
+        </div>
+
         <!-- Break Button -->
         <div style="position:relative;display:inline-flex;align-items:center;gap:6px;" *ngIf="employee">
           <button id="breakBtn"
@@ -165,6 +179,15 @@
             <line x1="23" y1="1" x2="17" y2="7"/><line x1="17" y1="1" x2="23" y2="7"/><path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.29 18a19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-7.71A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91A16 16 0 0 0 14 15.82l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
           </svg>
           <span>Not Connected</span>
+        </button>
+
+        <button class="sidebar-item" [class.active]="dashTab==='converted'" (click)="switchTab('converted')"
+          [title]="sidebarMinimized ? 'Converted' : ''">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+            stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-check-circle">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+          </svg>
+          <span>Converted</span>
         </button>
 
         <button class="sidebar-item" [class.active]="dashTab==='followups'" (click)="switchTab('followups')"
@@ -360,12 +383,11 @@
               </div>
             </div>
             <div class="card-header" style="margin-top:24px;">
-              <h3 class="card-title">Lead Summary</h3>
-            </div>
             <div class="lead-mini-grid">
-              <div class="lead-mini blue"><div class="lm-val">{{ totalLeads }}</div><div class="lm-lbl">Total Leads</div></div>
-              <div class="lead-mini green"><div class="lm-val">{{ convertedLeads }}</div><div class="lm-lbl">Converted</div></div>
-              <div class="lead-mini orange"><div class="lm-val">{{ pendingLeads }}</div><div class="lm-lbl">Pending</div></div>
+              <div class="lead-mini blue"><div class="lm-val">{{ totalLeadsCount }}</div><div class="lm-lbl">Total</div></div>
+              <div class="lead-mini green"><div class="lm-val">{{ convertedLeadsCount }}</div><div class="lm-lbl">Converted</div></div>
+              <div class="lead-mini orange"><div class="lm-val">{{ pendingLeadsCount }}</div><div class="lm-lbl">Pending</div></div>
+            </div>
             </div>
           </div>
 
@@ -787,14 +809,127 @@
       </div>
     </div>
 
-    <!-- ════════ FOLLOW-UPS TAB ════════ -->
+    <!-- ════════ CONVERTED TAB ════════ -->
+    <div class="tab-content" *ngIf="dashTab==='converted'">
+      <div class="dash-header-row" style="margin-bottom: 1.5rem;">
+        <h2 class="dash-title">Converted Clients</h2>
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <select [(ngModel)]="selectedConvertedStatus" (change)="selectedLeadCompany = ''"
+            style="padding: 6px 12px; border-radius: 8px; border: 1px solid #e2e8f0; background: white; color: #1e293b; font-size: 0.82rem; font-weight: 600; cursor: pointer; outline: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+            <option value="All">All Statuses</option>
+            <option *ngFor="let st of CONVERTED_PAGE_STATUSES" [value]="st">{{ st }}</option>
+          </select>
+          <div class="stat-badge" style="background: #dcfce7; color: #15803d; padding: 6px 12px; border-radius: 20px; font-weight: 700; font-size: 0.85rem;">
+            {{ convertedLeads.length }} TOTAL
+          </div>
+        </div>
+      </div>
+
+      <div class="leads-container">
+        <!-- Sidebar: Company List -->
+        <div class="leads-sidebar">
+          <div class="leads-sidebar-header">
+            <div style="font-weight: 700; color: var(--text-1); font-size: 0.95rem;">Converted Companies</div>
+            <div style="font-size: 0.75rem; color: var(--text-3); margin-top: 4px;">{{ uniqueConvertedCompanies.length }} companies</div>
+          </div>
+          <div class="leads-list">
+            <div class="lead-item" *ngFor="let company of uniqueConvertedCompanies" 
+              [class.active]="selectedLeadCompany === company" (click)="selectLeadCompany(company)">
+              <div class="lead-item-name">{{ company }}</div>
+              <div class="lead-item-meta">{{ convertedLeads.filter(l => l.leadCompanyName === company).length }} contacts</div>
+            </div>
+            <div *ngIf="uniqueConvertedCompanies.length === 0" style="padding: 2rem 1rem; text-align: center; color: var(--text-3); font-size: 0.85rem;">
+              No converted clients yet.
+            </div>
+          </div>
+        </div>
+
+        <!-- Main Content: Lead Details -->
+        <div class="leads-content">
+          <div class="leads-grid" *ngIf="selectedLeadCompany">
+            <div class="lead-card" *ngFor="let lead of convertedLeadsInSelectedCompany">
+              <div class="lead-card-body">
+                <div class="lead-name-row">
+                  <div class="lead-name">{{ lead.contactName || lead.contactNumber }}</div>
+                  <div class="lead-badge status-converted">Converted</div>
+                </div>
+                <div class="lead-phone">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2A19.79 19.79 0 0 1 11.29 18a19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-7.71A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91A16 16 0 0 0 14 15.82l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/>
+                  </svg>
+                  {{ lead.contactNumber }}
+                </div>
+                
+                <div *ngIf="lead.directorEmailAddress" class="lead-meta" style="margin-top: 6px;">
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path><polyline points="22,6 12,13 2,6"></polyline>
+                  </svg>
+                  {{ lead.directorEmailAddress }}
+                </div>
+
+                <!-- Remarks Logic -->
+                <div class="lead-remarks-container" style="margin-top: 12px; border-top: 1px dashed #e2e8f0; padding-top: 10px;">
+                  <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; margin-bottom: 6px; display: flex; align-items: center; gap: 4px;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                    REMARKS
+                  </div>
+                  <div *ngIf="!lead.remarks || lead.remarks.length === 0" style="font-size: 0.65rem; color: #94a3b8; font-style: italic; margin-bottom: 6px;">No remarks added.</div>
+                  <div *ngFor="let r of lead.remarks; let i = index" style="font-size: 0.72rem; color: #475569; background: #f8fafc; padding: 6px 10px; border-radius: 6px; margin-bottom: 5px; border-left: 2.5px solid #cbd5e1; line-height: 1.4; display: flex; justify-content: space-between; align-items: flex-start;">
+                    <span style="flex: 1;">{{ r }}</span>
+                    <button (click)="deleteLeadRemark(lead, i)" style="background: transparent; border: none; color: #94a3b8; cursor: pointer; padding: 2px; margin-left: 4px; display: flex; align-items: center; transition: color 0.2s;" onmouseover="this.style.color='#ef4444'" onmouseout="this.style.color='#94a3b8'">
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    </button>
+                  </div>
+                  <div style="display: flex; gap: 4px; margin-top: 8px;">
+                    <input type="text" [(ngModel)]="leadRemarksInputs[lead._id]" placeholder="Type remark..." 
+                      style="flex: 1; font-size: 0.75rem; border: 1px solid #e2e8f0; padding: 6px 10px; border-radius: 6px;"
+                      (keyup.enter)="addLeadRemark(lead)">
+                    <button (click)="addLeadRemark(lead)" [disabled]="remarkPostingIds.has(lead._id)"
+                      style="background: #4f46e5; color: white; border: none; border-radius: 6px; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer;">
+                      <svg *ngIf="!remarkPostingIds.has(lead._id)" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                      <div *ngIf="remarkPostingIds.has(lead._id)" class="spinner-sm" style="border-color: white; border-top-color: transparent; width: 14px; height: 14px; animation: rotate 0.8s linear infinite;"></div>
+                    </button>
+                  </div>
+                </div>
+                <div class="lead-actions">
+                  <select class="status-select" [ngClass]="getLeadStatusClass(lead.status)" [ngModel]="lead.status" (ngModelChange)="updateLeadStatus(lead, $event)" [disabled]="updatingLeadId === lead._id">
+                    <option *ngFor="let st of LEAD_STATUSES" [value]="st">{{ st }}</option>
+                  </select>
+                  <button class="btn-followup-icon" (click)="openFollowupModal(lead)" title="Add Follow-up">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div *ngIf="!selectedLeadCompany" class="leads-empty-state">
+            <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="1"><rect x="4" y="2" width="16" height="20" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path></svg>
+            <h3 style="margin-top: 1rem;">Select a company to view converted clients</h3>
+            <p>Click on a company from the left list to see contact details</p>
+          </div>
+        </div>
+      </div>
+    </div>
     <div class="tab-content" *ngIf="dashTab==='followups'">
       <div class="dash-header-row" style="margin-bottom: 1.5rem;">
         <h2 class="dash-title">Follow-ups</h2>
       </div>
 
-      <div class="leads-toolbar">
-        <div class="search-wrap">
+      <div class="leads-toolbar" style="margin-bottom: 1.5rem;">
+        <div style="display: flex; gap: 8px; margin-right: auto;">
+          <button class="filter-chip" [class.active]="followupFilter === 'all'" (click)="followupFilter = 'all'">
+            All Follow-ups
+          </button>
+          <button class="filter-chip" [class.active]="followupFilter === 'today'" (click)="followupFilter = 'today'">
+            Today's Tasks
+            <span class="chip-badge" *ngIf="todayFollowupsCount > 0">{{ todayFollowupsCount }}</span>
+          </button>
+        </div>
+        
+        <div class="search-wrap" style="width: 280px;">
           <svg class="search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
           <input id="followupSearch" class="search-input" type="text" placeholder="Search follow-ups…" [(ngModel)]="followupSearch"/>
         </div>
