@@ -470,6 +470,14 @@
                 </svg>
               </div>
               <h3 class="cd-header-title">{{ selectedLeadCompany }}</h3>
+              <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 0.75rem; color: var(--text-3); font-weight: 600;">Bulk Status:</span>
+                <select class="status-select" style="font-size: 0.72rem; padding: 4px 8px; height: 28px; width: 130px;"
+                  (change)="updateAllDirectorsStatus($any($event.target).value); $any($event.target).value = ''">
+                  <option value="">Update All...</option>
+                  <option *ngFor="let st of LEAD_STATUSES" [value]="st">{{ st }}</option>
+                </select>
+              </div>
             </div>
 
             <div class="leads-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
@@ -618,6 +626,14 @@
                 </svg>
               </div>
               <h3 class="cd-header-title">{{ selectedLeadCompany }}</h3>
+              <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 0.75rem; color: var(--text-3); font-weight: 600;">Bulk Status:</span>
+                <select class="status-select" style="font-size: 0.72rem; padding: 4px 8px; height: 28px; width: 130px;"
+                  (change)="updateAllDirectorsStatus($any($event.target).value); $any($event.target).value = ''">
+                  <option value="">Update All...</option>
+                  <option *ngFor="let st of LEAD_STATUSES" [value]="st">{{ st }}</option>
+                </select>
+              </div>
             </div>
 
             <div class="leads-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
@@ -758,6 +774,14 @@
                 </svg>
               </div>
               <h3 class="cd-header-title">{{ selectedLeadCompany }}</h3>
+              <div style="margin-left: auto; display: flex; align-items: center; gap: 8px;">
+                <span style="font-size: 0.75rem; color: var(--text-3); font-weight: 600;">Bulk Status:</span>
+                <select class="status-select" style="font-size: 0.72rem; padding: 4px 8px; height: 28px; width: 130px;"
+                  (change)="updateAllDirectorsStatus($any($event.target).value); $any($event.target).value = ''">
+                  <option value="">Update All...</option>
+                  <option *ngFor="let st of LEAD_STATUSES" [value]="st">{{ st }}</option>
+                </select>
+              </div>
             </div>
 
             <div class="leads-grid" style="grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">

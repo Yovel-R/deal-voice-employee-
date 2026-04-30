@@ -172,49 +172,34 @@ export class App implements OnInit, OnDestroy {
   selectedLeadCompany = ''; // For sidebar layout
 
   get uniqueLeadCompanies(): string[] {
-    const companyMap = new Map<string, Lead[]>();
+    const sets = new Set<string>();
     
-    // Group leads by company, respecting the lead set filter
-    this.allLeads.forEach(l => {
-      if (this.selectedLeadSet === 'none') return;
-      if (this.selectedLeadSet && l.setLabel !== this.selectedLeadSet) return;
+    // Filter leads by set, status, and search
+    const filtered = this.allLeads.filter(l => {
+      if (this.selectedLeadSet === 'none') return false;
+      if (this.selectedLeadSet && l.setLabel !== this.selectedLeadSet) return false;
       
-      if (!companyMap.has(l.leadCompanyName)) companyMap.set(l.leadCompanyName, []);
-      companyMap.get(l.leadCompanyName)!.push(l);
-    });
-
-    const filteredCompanies: string[] = [];
-    for (const [name, leads] of companyMap.entries()) {
-      // Sort to identify the "1st director" (lowest sheetOrder)
-      leads.sort((a, b) => (a.sheetOrder || 0) - (b.sheetOrder || 0));
-      const firstDirector = leads[0];
-
-      // Status Filter: Filter by 1st director's status
-      let matchesStatus = true;
-      if (this.leadStatusFilter) {
-        matchesStatus = firstDirector.status === this.leadStatusFilter;
-      }
-
-      // Search Filter: Match if ANY director in the company matches the query
-      let matchesSearch = true;
+      // If a status filter is active, the lead must match it
+      if (this.leadStatusFilter && l.status !== this.leadStatusFilter) return false;
+      
+      // Search Filter
       if (this.leadSearch) {
         const q = this.leadSearch.toLowerCase();
-        matchesSearch = leads.some(l => 
-          l.leadCompanyName.toLowerCase().includes(q) ||
-          l.contactName?.toLowerCase().includes(q) ||
-          l.contactNumber?.toLowerCase().includes(q)
-        );
+        if (!(l.leadCompanyName.toLowerCase().includes(q) ||
+              l.contactName?.toLowerCase().includes(q) ||
+              l.contactNumber?.toLowerCase().includes(q))) return false;
       }
+      return true;
+    });
 
-      if (matchesStatus && matchesSearch) {
-        filteredCompanies.push(name);
-      }
-    }
+    filtered.forEach(l => {
+      if (l.leadCompanyName) sets.add(l.leadCompanyName);
+    });
 
-    const arr = filteredCompanies.sort();
+    const arr = Array.from(sets).sort();
     
     // Auto-selection logic
-    if (this.selectedLeadCompany && !arr.includes(this.selectedLeadCompany)) {
+    if (this.selectedLeadCompany && !sets.has(this.selectedLeadCompany)) {
       this.selectedLeadCompany = arr.length > 0 ? arr[0] : '';
     } else if (arr.length > 0 && !this.selectedLeadCompany) {
       this.selectedLeadCompany = arr[0];
@@ -284,69 +269,39 @@ export class App implements OnInit, OnDestroy {
   }
 
   get uniqueInterestedCompanies(): string[] {
-    const companyMap = new Map<string, Lead[]>();
+    const sets = new Set<string>();
     this.allLeads.forEach(l => {
       if (this.INTERESTED_PAGE_STATUSES.includes(l.status)) {
-        if (!companyMap.has(l.leadCompanyName)) companyMap.set(l.leadCompanyName, []);
-        companyMap.get(l.leadCompanyName)!.push(l);
+        if (this.selectedInterestedStatus === 'All' || l.status === this.selectedInterestedStatus) {
+          if (l.leadCompanyName) sets.add(l.leadCompanyName);
+        }
       }
     });
-
-    const result: string[] = [];
-    for (const [name, leads] of companyMap.entries()) {
-      leads.sort((a, b) => (a.sheetOrder || 0) - (b.sheetOrder || 0));
-      const firstDirector = leads[0];
-      let matchesStatus = true;
-      if (this.selectedInterestedStatus !== 'All') {
-        matchesStatus = firstDirector.status === this.selectedInterestedStatus;
-      }
-      if (matchesStatus) result.push(name);
-    }
-    return result.sort();
+    return Array.from(sets).sort();
   }
 
   get uniqueDnpCompanies(): string[] {
-    const companyMap = new Map<string, Lead[]>();
+    const sets = new Set<string>();
     this.allLeads.forEach(l => {
       if (this.DNP_PAGE_STATUSES.includes(l.status)) {
-        if (!companyMap.has(l.leadCompanyName)) companyMap.set(l.leadCompanyName, []);
-        companyMap.get(l.leadCompanyName)!.push(l);
+        if (this.selectedDnpStatus === 'All' || l.status === this.selectedDnpStatus) {
+          if (l.leadCompanyName) sets.add(l.leadCompanyName);
+        }
       }
     });
-
-    const result: string[] = [];
-    for (const [name, leads] of companyMap.entries()) {
-      leads.sort((a, b) => (a.sheetOrder || 0) - (b.sheetOrder || 0));
-      const firstDirector = leads[0];
-      let matchesStatus = true;
-      if (this.selectedDnpStatus !== 'All') {
-        matchesStatus = firstDirector.status === this.selectedDnpStatus;
-      }
-      if (matchesStatus) result.push(name);
-    }
-    return result.sort();
+    return Array.from(sets).sort();
   }
 
   get uniqueConvertedCompanies(): string[] {
-    const companyMap = new Map<string, Lead[]>();
+    const sets = new Set<string>();
     this.allLeads.forEach(l => {
       if (this.CONVERTED_PAGE_STATUSES.includes(l.status)) {
-        if (!companyMap.has(l.leadCompanyName)) companyMap.set(l.leadCompanyName, []);
-        companyMap.get(l.leadCompanyName)!.push(l);
+        if (this.selectedConvertedStatus === 'All' || l.status === this.selectedConvertedStatus) {
+          if (l.leadCompanyName) sets.add(l.leadCompanyName);
+        }
       }
     });
-
-    const result: string[] = [];
-    for (const [name, leads] of companyMap.entries()) {
-      leads.sort((a, b) => (a.sheetOrder || 0) - (b.sheetOrder || 0));
-      const firstDirector = leads[0];
-      let matchesStatus = true;
-      if (this.selectedConvertedStatus !== 'All') {
-        matchesStatus = firstDirector.status === this.selectedConvertedStatus;
-      }
-      if (matchesStatus) result.push(name);
-    }
-    return result.sort();
+    return Array.from(sets).sort();
   }
 
   get uniqueHeartedCompanies(): string[] {
@@ -1076,6 +1031,20 @@ export class App implements OnInit, OnDestroy {
         },
         error: () => { this.updatingLeadId = ''; }
       });
+  }
+
+  updateAllDirectorsStatus(newStatus: string): void {
+    if (!this.selectedLeadCompany || !newStatus) return;
+    if (!confirm(`Are you sure you want to change the status of ALL directors in ${this.selectedLeadCompany} to ${newStatus}?`)) return;
+
+    const leadsToUpdate = this.leadsInSelectedCompany;
+    leadsToUpdate.forEach(l => {
+      this.api.patch<any>(`/api/leads/${l._id}/status`, { status: newStatus }).subscribe({
+        next: res => {
+          if (res.success) l.status = newStatus;
+        }
+      });
+    });
   }
 
   getLeadStatusClass(status: string): string {
